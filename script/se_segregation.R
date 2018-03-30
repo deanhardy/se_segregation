@@ -114,7 +114,7 @@ huc.poll <- st_intersection(huc, poll)
 dmr.map <- tm_shape(huc.arc) +
   tm_polygons("nwnl_prc",
               palette = "Greys",
-              title = "Non-White,\nNon-Latinx\nPopulation (%)") +
+              title = "Non-White /\nNon-Latinx\nPopulation (%)") +
   tm_shape(huc) + 
   tm_borders(col = "yellow") +
   tm_shape(huc.poll) + 
@@ -162,9 +162,9 @@ col = sample(col_vector, n)
 ##plot % nwnl by pollution as kg/yr/km&2
 fig <- ggplot(hpr.sum, aes(nwnl_prc, sum/1000)) +
   geom_point(aes(nwnl_prc, sum/1000, col = Name), size = 3) + 
-  geom_smooth(method = "lm", se = FALSE, linetype = "solid") +
+  geom_smooth(method = "auto", se = TRUE, linetype = "solid", level = 0.95) +
   scale_x_continuous(limits = c(0,1)) +
-  xlab("Non-white, Non-Latinx Population (%)") + 
+  xlab("Non-white / Non-Latinx Population (%)") + 
   ylab("Pollution (1,000 kg/yr/km^2)") + 
   scale_color_manual(name = "HUC10 Watershed",
                      values = col) +
