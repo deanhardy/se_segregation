@@ -8,6 +8,7 @@ library(tigris)
 library(tmap)
 library(sf)
 library(ggthemes)
+library(dmm)
 
 # census_api_key("") ## Already installed
 
@@ -24,6 +25,19 @@ dmr15 <- read.csv("data/dmr/dmr_2015_huc03.csv", skip = 4)
 dmr <- rbind(dmr11, dmr12, dmr13, dmr14, dmr15) %>%
   filter(State == "GA") %>%
   st_as_sf(coords = c("Facility.Longitude", "Facility.Latitude"), crs = 4269)
+
+## convert sso shapefile to csv for manual cleaning of ESTIMATED column in Excel
+# st_read("data/sso/sso.shp") %>%
+#   st_transform(., 4269) %>%
+#   st_as_sf(., coords = c("lon", "lat"), crs = 4269) %>% 
+#   cbind(., st_coordinates(.)) %>% 
+#   st_set_geometry(NULL) %>% 
+#   write_csv(., 'data/sso/sso.csv')
+
+## import revised sso data
+sso <- read.csv("data/sso/sso.csv") %>%
+  filter(ESTIMATED != "NA") %>%
+  st_as_sf(., coords = c("X", "Y"), crs = 4269)
 
 ##import HUC10 data
 # nhd <- get_nhd(shp, "arc_nhd") ## didn't work out using "FedData" package
