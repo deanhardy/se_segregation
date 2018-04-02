@@ -8,11 +8,15 @@ library(tigris)
 library(tmap)
 library(sf)
 library(ggthemes)
-library(dmm)
+# library(dmm)
 
 # census_api_key("") ## Already installed
 
 yr <- "2015"
+
+## import segregation data from 2011-2015 ACSs
+seg <- st_read("data/geojson/arc15.geojson") %>%
+  mutate(rd15c = as.factor(rd15c))
 
 ## import DMR data downloaded from internet for HUC03 and filter to GA and make spatial
 ## https://echo.epa.gov/trends/loading-tool/get-data/custom-search
@@ -52,8 +56,8 @@ huc <- st_read("data/spatial/huc10.shp")
 
 ## import counties that are contain HUC10s >50% in the ARC region, ie the "ARC watershed"
 cnty <- read.csv("data/cnty.txt") %>%
-  select(NAME10) %>%
   mutate(NAME10 = as.character(NAME10)) %>%
+  dplyr::select(NAME10) %>%
   unlist(use.names = FALSE)
 
 ## import race variables of interest
@@ -70,7 +74,7 @@ arc <- get_acs(geography = "block group",
 
 ## transform ACS census data for joining to spatial data
 arc2 <- arc %>%
-  select(-moe, -NAME) %>%
+  dplyr::select(-moe, -NAME) %>%
   spread(key = "variable", value = "estimate")
 
 ## import spatial data for "cnty" region
@@ -85,7 +89,7 @@ qtm(shp, fill = "estimate")
 
 ## append census race data to spatial data
 arc.shp <- left_join(shp, arc2, by = "GEOID", copy = TRUE) %>%
-  select(-moe, -variable, -NAME) %>%
+  dplyr::select(-moe, -variable, -NAME) %>%
   rename(B03002_001 = estimate) %>%
   mutate(nwnl_prc = 1-(B03002_003/B03002_001))
 # arc.shp <- arc.shp %>% st_as_sf() 
@@ -190,30 +194,29 @@ tiff("figures/pollution_race_2011-15.tiff", res = 300, compression = "lzw", unit
 fig
 dev.off()
 
+# col <- c("0" = "white", "2" = "orange", "3" = "green", "6" = "salmon", "7" = "purple", 
+#          "8" = "light orange", "9" = "light green", "13" = "light purple", "14" = "brown")
 
+col <- c("white", "orange", "green","pink", "purple", 
+         "light orange", "yellow", "light purple", "brown")
+col <= get_brewer_pal("Accent", n = 9)
+## map ARC race data with watersheds and DMR overlaid
+seg.map <- tm_shape(seg) +
+  tm_polygons("rd15c",
+              palette = , auto.palette.mapping = TRUE,
+              title = "Segregation/\nDiversity") +
+  tm_shape(huc) + 
+  tm_borders(col = "black") +
+  tm_shape(huc.poll) + 
+  tm_bubbles(size = "sum", col = "black", scale = 2, title.size = "Pollution (kg/yr)",
+             size.lim = c(0,42e6), sizes.legend = c(2e6, 4e6, 6e6, 10e6, 20e6, 40e6)) + 
+  tm_compass(type = "arrow", size = 2, position = c(0.86, 0.06)) +
+  tm_scale_bar(breaks = c(0,10), size = 0.8, position= c(0.85, 0.0)) +
+  tm_legend(position = c(-0.15, 0)) + 
+  tm_layout(main.title = "Atlanta's 'Watershed' (2011-2015)", main.title.position = "center", 
+            frame = FALSE)
+seg.map
 
-## trying to import several csvs and combine into one file
-## https://stackoverflow.com/questions/11433432/importing-multiple-csv-files-into-r
-
-# setwd("")
-# 
-# temp = list.files(pattern="*.csv")
-# myfiles = lapply(temp, read.delim)
-# 
-# 
-# temp = list.files(pattern="*.csv")
-# list2env(
-#   lapply(setNames(temp, make.names(gsub("*.csv$", "", temp))), 
-#          read.csv), envir = .GlobalEnv)
-# 
-# folder <- "C:/Users/dhardy/Dropbox/sesync/manuscripts/in_prep/se_segregation/R/se_segregation/data/dmr"      # path to folder that holds multiple .csv files
-# file_list <- list.files(path=folder, pattern="*.csv") # create list of all .csv files in folder
-# 
-# # read in each .csv file in file_list and rbind them into a data frame called data 
-# data <- 
-#   do.call("rbind", 
-#           lapply(file_list, 
-#                  function(x) 
-#                    read.csv(paste(folder, x, sep=''), 
-#                             stringsAsFactors = FALSE)))
-
+tiff("figures/dmr_seg_map2011-15.tif", res = 300, units = "in", height = 7.5, width = 7.5, compression = "lzw")
+dmr.map
+dev.off()

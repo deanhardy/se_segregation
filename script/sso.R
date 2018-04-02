@@ -8,11 +8,14 @@ library(tigris)
 library(tmap)
 library(sf)
 library(ggthemes)
-
+library(wellknown)
 
 # census_api_key("") ## Already installed
 
 yr <- "2016"
+
+## import segregation data from 2011-2015 ACSs
+seg <- st_read("data/geojson/arc15.geojson")
 
 ## convert sso shapefile to csv for manual cleaning of ESTIMATED column in Excel
 # library(dmm)
@@ -105,6 +108,7 @@ map
 tiff("figures/dekalb_sso_map2012-16.tif", res = 300, units = "in", height = 7.5, width = 8.5, compression = "lzw")
 map
 dev.off()
+
 
 ## sum pollution by HUC10 watershed, hence "hp"
 hp.sum <- huc.sso %>%
