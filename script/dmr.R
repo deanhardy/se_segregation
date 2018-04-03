@@ -128,6 +128,8 @@ qtm(huc.arc, fill = "nwnl_prc")
 ## union ARC race data with DMR summed data
 huc.poll <- st_intersection(huc, poll)
 
+ha.test <- st_intersects(huc, arc.shp)
+  
 ## map ARC race data with watersheds and DMR overlaid
 dmr.map <- tm_shape(huc.arc) +
   tm_polygons("nwnl_prc",
@@ -198,12 +200,13 @@ dev.off()
 #          "8" = "light orange", "9" = "light green", "13" = "light purple", "14" = "brown")
 
 col <- c("white", "orange", "green","pink", "purple", 
-         "light orange", "yellow", "light purple", "brown")
-col <= get_brewer_pal("Accent", n = 9)
+         "light orange", "yellow", "light purple", "brown", "black")
+# col <= get_brewer_pal("Accent", n = 9)
+
 ## map ARC race data with watersheds and DMR overlaid
 seg.map <- tm_shape(seg) +
   tm_polygons("rd15c",
-              palette = , auto.palette.mapping = TRUE,
+              fill = col,
               title = "Segregation/\nDiversity") +
   tm_shape(huc) + 
   tm_borders(col = "black") +
