@@ -128,7 +128,7 @@ qtm(huc.arc, fill = "nwnl_prc")
 ## union ARC race data with DMR summed data
 huc.poll <- st_intersection(huc, poll)
 
-ha.test <- st_intersection(arc.shp, huc)
+ha.test <- st_intersection(st_union(arc.shp), st_union(huc))
   
 ## map ARC race data with watersheds and DMR overlaid
 dmr.map <- tm_shape(huc.arc) +
