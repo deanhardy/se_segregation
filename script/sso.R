@@ -2,23 +2,22 @@ rm(list=ls())
 
 ##then packages are loaded into the R environment
 library(tidyverse)
-library(tidycensus)
-library(viridis)
-library(tigris)
-library(tmap)
 library(sf)
 library(ggthemes)
-library(wellknown)
+# library(wellknown)
 
 # census_api_key("") ## Already installed
 
 yr <- "2016"
 
-## import segregation data from 2011-2015 ACSs
-seg <- st_read("data/geojson/arc15.geojson")
+## import segregation/diversity data from 2011-2015 ACS
+seg <- st_read("data/geojson/arc15.geojson") %>%
+  mutate(rd15c = as.factor(rd15c)) %>%
+  st_transform(4326)
 
 ## convert sso shapefile to csv for manual cleaning of ESTIMATED column in Excel
-# library(dmm)
+## only needed to do once
+
 # st_read("data/sso/sso.shp") %>%
 #   st_transform(., 4269) %>%
 #   st_as_sf(., coords = c("lon", "lat"), crs = 4269) %>% 

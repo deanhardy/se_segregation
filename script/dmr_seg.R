@@ -4,13 +4,11 @@ rm(list=ls())
 library(tidyverse)
 library(tmap)
 library(sf)
-library(ggthemes)
-# library(dmm)
 
 ##import HUC10 data
 huc <- st_read("data/spatial/huc10.shp") %>%
   st_transform(4269)
-
+  
 ## import segregation/diversity data from 2011-2015 ACS
 seg <- st_read("data/geojson/arc15.geojson") %>%
   mutate(rd15c = as.factor(rd15c)) %>%
@@ -24,59 +22,63 @@ dmr13 <- read.csv("data/dmr/dmr_2013_huc03.csv", skip = 4)
 dmr14 <- read.csv("data/dmr/dmr_2014_huc03.csv", skip = 4)
 dmr15 <- read.csv("data/dmr/dmr_2015_huc03.csv", skip = 4)
 
-## combine dmr data & clip to Georgia
+## combine dmr data, clip to Georgia, & sum by loading over watershed area in ARC region
+## note that PERCENTAGE in 'huc' object equals that in ARC (from ArcGIS)
 dmr <- rbind(dmr11, dmr12, dmr13, dmr14, dmr15) %>%
   filter(State == "GA") %>%
-  st_as_sf(coords = c("Facility.Longitude", "Facility.Latitude"), crs = 4269)
-
-## extract pollution load data from dmr and summarize by facility
-dmr.sum <- dmr %>%
+  st_as_sf(coords = c("Facility.Longitude", "Facility.Latitude"), crs = 4269) %>%
   group_by(NPDES.Permit.Number) %>%
-  summarise(sum = sum(Pollutant.Load..kg.yr., na.rm = TRUE))
+  summarise(sum = sum(Pollutant.Load..kg.yr., na.rm = TRUE)) %>% ## extract load data from dmr, summarize by facility
+  st_intersection(huc) %>%
+  mutate(dmr_area = sum/(AreaSqKm * PERCENTAGE)) %>%
+  st_intersection(seg) %>%
+  select(NPDES.Permit.Number, HUC10, Name, dmr_area)
 
-# seg_huc <- st_intersection(huc, seg)
-# qtm(seg_huc)
-
-## union ARC race data with DMR summed data
-huc.poll <- st_intersection(huc, poll)
-qtm(huc.poll)
-
-ha.test <- st_intersection(st_union(huc), st_union(arc.shp))
-qtm(ha.test)
-
-# col <- c("0" = "white", "2" = "orange", "3" = "green", "6" = "salmon", "7" = "purple", 
-#          "8" = "light orange", "9" = "light green", "13" = "light purple", "14" = "brown")
-
-col <- c("white", "orange", "green","pink", "purple", 
-         "light orange", "yellow", "light purple", "brown", "black")
-# col <= get_brewer_pal("Accent", n = 9)
+## create custom palette with custom legend labels for seg indices
+col <- c("white", "#ff9900", "#66cc00", "#ff6666", "#9966ff", 
+         "#ffcc99", "#99ff99", "#ff9999", "#99752e")
+leg_col <- c("#ff9900", "#66cc00", "#ff6666", "#9966ff", 
+             "#ffcc99", "#99ff99", "#ff9999", "#99752e")
+lbl <- c("Low (White)", "Low (African American)", "Low (Asian)", "Low (Latinx)",
+         "Mod (White)", "Mod (African American)", "Mod (Latinx)", "High Diversity")
 
 ## map ARC race data with watersheds and DMR overlaid
-seg.map <- tm_shape(seg) +
-  tm_polygons("rd15c",
-              fill = col,
-              title = "Segregation/\nDiversity") +
-  tm_shape(huc) + 
+## still working out clipping of huc to ARC region
+dmr_map <- 
+  tm_shape(huc) +
+  tm_borders(col = "white") +
+  tm_shape(filter(seg, rd15c != 0)) +
+  tm_fill("rd15c", legend.show = FALSE, palette = col) +
+  tm_add_legend(type = c("fill"), labels = lbl, col = leg_col, 
+                title = "Diversity\n(by majority group)") +
+  tm_shape(huc) +
   tm_borders(col = "black") +
-  tm_shape(huc.poll) + 
-  tm_bubbles(size = "sum", col = "black", scale = 2, title.size = "Pollution (kg/yr)",
-             size.lim = c(0,42e6), sizes.legend = c(2e6, 4e6, 6e6, 10e6, 20e6, 40e6)) + 
+  tm_shape(dmr) + 
+  tm_bubbles(size = "dmr_area", col = "black", scale = 2, title.size = "Pollution (kg/yr/km^2)",
+             size.lim = c(0,1.5e3), sizes.legend = c(10, 100, 250, 500, 750, 1000)) + 
   tm_compass(type = "arrow", size = 2, position = c(0.86, 0.06)) +
-  tm_scale_bar(breaks = c(0,10), size = 0.8, position= c(0.85, 0.0)) +
-  tm_legend(position = c(-0.15, 0)) + 
-  tm_layout(main.title = "Atlanta's 'Watershed' (2011-2015)", main.title.position = "center", 
-            frame = FALSE)
-seg.map
+  tm_scale_bar(breaks = c(0,20), size = 0.8, position= c(0.85, 0.0)) +
+  tm_legend(position = c(-0.25, 0)) + 
+  tm_layout(main.title = "Greater Atlanta Metro Area (2011-2015)", main.title.position = "center", 
+            frame = FALSE) + 
+  tm_credits("Pollution data from EPA Discharge Monitoring Report for 2011-2015 Diversity/Segregation from 5-YR ACS 2011-2015",
+             position = c(0,0), size = 12)
+dmr_map
 
-tiff("figures/dmr_seg_map2011-15.tif", res = 300, units = "in", height = 7.5, width = 7.5, compression = "lzw")
-dmr.map
+tiff("figures/dmr_seg_map2011-15.tif", res = 300, units = "in", height = 7.5, width = 10, compression = "lzw")
+dmr_map
 dev.off()
 
-## sum pollution loads by HUC10 watershed, hence "hp"
-hp.sum <- huc.poll %>%
-  group_by(Name) %>%
-  summarise(sum = sum(sum/AreaSqKm)) %>%
-  st_set_geometry(NULL)
+
+
+
+
+## 
+seg_huc <- st_intersection(huc, seg)
+qtm(seg_huc)
+
+# ha.test <- st_intersection(st_union(huc), st_union(arc.shp))
+# qtm(ha.test)
 
 ## percent nwnl by HUC10 watershed, hence "hr"; note that this approach doesn't account for BGs
 ## that were cut off, so no adjustment made for some BGs that crossover watershed boundary
@@ -101,7 +103,7 @@ pie(rep(1,n), col=sample(col_vector, n))
 col = sample(col_vector, n)
 
 ##plot % nwnl by pollution as kg/yr/km&2
-fig <- ggplot(hpr.sum, aes(nwnl_prc, sum/1000)) +
+fig <- ggplot(hpr.sum, aes(nwnl_prc, dmr_areasum/1000)) +
   geom_point(aes(nwnl_prc, sum/1000, col = Name), size = 3) + 
   geom_smooth(method = "auto", se = TRUE, linetype = "solid", level = 0.95) +
   scale_x_continuous(limits = c(0,1)) +
