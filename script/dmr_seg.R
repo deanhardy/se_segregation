@@ -129,9 +129,58 @@ dev.off()
 ## graphing pollution rates by racial diversity at watershed scale
 ###################################################################
 
-## 
-seg_huc <- st_intersection(huc, seg)
-qtm(seg_huc)
+## calculate the area of seg block groups within each watershed
+## via https://rpubs.com/rural_gis/255550
+int <- as.tibble(st_intersection(seg, huc))
+
+#add in an area count column to the tibble & calc area and percent area for each BG by watershed
+library(lwgeom)
+int <- int %>%
+  mutate(AreaSqKmHUC = as.numeric((st_area(int$geometry) / 1e6))) %>%
+  mutate(PercentHUC = AreaSqKmHUC/(aland+awater)*1e6)
+
+## Want the percent of each watershed that has low diversity with majority people of color
+## will plot that against volume dmr per year per area
+se_seg <- int %>%
+  filter(PERCENTAGE >= 50) %>%
+  mutate(lowdiv_AreaSQKM = ifelse(rd15c %in% c(3,4,5,6,7), AreaSqKmHUC, 0)) %>%
+  group_by(Name) %>%
+  summarise(Area_LD = sum(lowdiv_AreaSQKM), Area_HUC = sum(AreaSqKmHUC)) %>%
+  mutate(PercentLD = Area_LD/Area_HUC)
+
+dmr_sum <- dmr %>%
+  group_by(Name) %>%
+  summarise(dmr_load = sum(dmr_area))
+
+se_seg_dmr <- merge(se_seg, dmr_sum, by = "Name")
+  
+library(RColorBrewer)
+n <- 49
+qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
+col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
+pie(rep(1,n), col=sample(col_vector, n))
+col3 = sample(col_vector, n)
+
+##plot low diversity by pollution as kg/yr/km&2
+fig <- ggplot(se_seg_dmr) +
+  geom_point(aes(PercentLD, dmr_load, col = Name), size = 3) + 
+  # geom_smooth(method = "auto", se = TRUE, linetype = "solid", level = 0.95) +
+  scale_x_continuous(limits = c(0,0.6)) +
+  xlab("% Low Diversity (People of Color)") + 
+  ylab("Pollution (kg/yr/km^2)") + 
+  scale_color_manual(name = "HUC10 Watershed",
+                     values = col3) +
+  ggtitle("Pollution by Segregation (2011-2015)")
+fig
+
+tiff("figures/dmr_race_seg2011-15.tiff", res = 300, compression = "lzw", units = "in", 
+     height = 5.5, width = 8)
+fig
+dev.off()               
+
+
+
+
 
 # ha.test <- st_intersection(st_union(huc), st_union(arc.shp))
 # qtm(ha.test)
