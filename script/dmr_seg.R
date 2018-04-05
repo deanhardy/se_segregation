@@ -5,13 +5,17 @@ library(tidyverse)
 library(tmap)
 library(sf)
 
+##############################################################
+## data import and prepping
+##############################################################
+
 ##import HUC10 data
 huc <- st_read("data/spatial/huc10.shp") %>%
   st_transform(4269)
   
 ## import segregation/diversity data from 2011-2015 ACS
 seg <- st_read("data/geojson/arc15.geojson") %>%
-  mutate(rd15c = as.factor(rd15c)) %>%
+  mutate(rd15c = as.factor(rd15c), i15c = as.factor(i15c)) %>%
   st_transform(4269)
 
 ## import DMR data downloaded from internet for HUC03 and filter to GA and make spatial
@@ -34,6 +38,12 @@ dmr <- rbind(dmr11, dmr12, dmr13, dmr14, dmr15) %>%
   st_intersection(seg) %>%
   select(NPDES.Permit.Number, HUC10, Name, dmr_area)
 
+
+##################################################################
+## map ARC RACE DIVERSITY data with watersheds and DMR overlaid
+## still working out clipping of huc to ARC region
+##################################################################
+
 ## create custom palette with custom legend labels for seg indices
 col <- c("white", "#ff9900", "#66cc00", "#ff6666", "#9966ff", 
          "#ffcc99", "#99ff99", "#ff9999", "#99752e")
@@ -42,36 +52,82 @@ leg_col <- c("#ff9900", "#66cc00", "#ff6666", "#9966ff",
 lbl <- c("Low (White)", "Low (African American)", "Low (Asian)", "Low (Latinx)",
          "Mod (White)", "Mod (African American)", "Mod (Latinx)", "High Diversity")
 
-## map ARC race data with watersheds and DMR overlaid
-## still working out clipping of huc to ARC region
-dmr_map <- 
+## mapping
+raceseg_map <- 
   tm_shape(huc) +
   tm_borders(col = "white") +
   tm_shape(filter(seg, rd15c != 0)) +
   tm_fill("rd15c", legend.show = FALSE, palette = col) +
   tm_add_legend(type = c("fill"), labels = lbl, col = leg_col, 
-                title = "Diversity\n(by majority group)") +
+                title = "Racial Diversity\n(by majority group)") +
   tm_shape(huc) +
   tm_borders(col = "black") +
   tm_shape(dmr) + 
   tm_bubbles(size = "dmr_area", col = "black", scale = 2, title.size = "Pollution (kg/yr/km^2)",
              size.lim = c(0,1.5e3), sizes.legend = c(10, 100, 250, 500, 750, 1000)) + 
-  tm_compass(type = "arrow", size = 2, position = c(0.86, 0.06)) +
-  tm_scale_bar(breaks = c(0,20), size = 0.8, position= c(0.85, 0.0)) +
-  tm_legend(position = c(-0.25, 0)) + 
+  tm_compass(type = "arrow", size = 2, position = c(0.83, 0.06)) +
+  tm_scale_bar(breaks = c(0,20), size = 0.8, position= c(0.8, 0.0)) +
+  tm_legend(position = c(-0.2, 0)) + 
   tm_layout(main.title = "Greater Atlanta Metro Area (2011-2015)", main.title.position = "center", 
-            frame = FALSE) + 
-  tm_credits("Pollution data from EPA Discharge Monitoring Report for 2011-2015 Diversity/Segregation from 5-YR ACS 2011-2015",
-             position = c(0,0), size = 12)
-dmr_map
+            frame = FALSE)
+  # tm_credits("*Pollution data from EPA Discharge Monitoring Report for 2011-2015; Segregation data from ACS-5YR 2011-2015",
+  #            position = c("RIGHT","BOTTOM"), size = 14)
+raceseg_map
 
-tiff("figures/dmr_seg_map2011-15.tif", res = 300, units = "in", height = 7.5, width = 10, compression = "lzw")
-dmr_map
+tiff("figures/dmr_race_seg_map2011-15.tif", res = 300, units = "in", 
+     height = 7.5, width = 10, compression = "lzw")
+raceseg_map
 dev.off()
 
 
+###################################################################
+## map ARC INCOME DIVERSITY data with watersheds and DMR overlaid
+## still working out clipping of huc to ARC region
+###################################################################
+
+## create custom palette with custom legend labels for seg indices
+col2 <- c("white", "#ff9900", "#66cc00",  
+         "#ffcc99", "#99ff99", "#ff9999", "#cc99ff",
+         "#99752e")
+leg_col2 <- c("#ff9900", "#66cc00",  
+             "#ffcc99", "#99ff99", "#ff9999", "#cc99ff",
+             "#99752e")
+lbl2 <- c("Low (Low-Income)", "Low (Low-Middle)",
+         "Mod (Low-Income)", "Mod (Low-Middle)", "Mod (Upper-Middle)", "Mod (Upper)", 
+         "High Diversity")
+
+## mapping
+inc_map <- 
+  tm_shape(huc) +
+  tm_borders(col = "white") +
+  tm_shape(seg) +
+  tm_fill("i15c", legend.show = FALSE, palette = col2) +
+  tm_add_legend(type = c("fill"), labels = lbl2, col = leg_col2, 
+                title = "Income Diversity\n(by dominant group)") +
+  tm_shape(huc) +
+  tm_borders(col = "black") +
+  tm_shape(dmr) + 
+  tm_bubbles(size = "dmr_area", col = "black", scale = 2, title.size = "Pollution (kg/yr/km^2)",
+             size.lim = c(0,1.5e3), sizes.legend = c(10, 100, 250, 500, 750, 1000)) + 
+  tm_compass(type = "arrow", size = 2, position = c(0.83, 0.06)) +
+  tm_scale_bar(breaks = c(0,20), size = 0.8, position= c(0.8, 0.0)) +
+  tm_legend(position = c(-0.2, 0)) + 
+  tm_layout(main.title = "Greater Atlanta Metro Area (2011-2015)", main.title.position = "center", 
+            frame = FALSE)
+# tm_credits("*Pollution data from EPA Discharge Monitoring Report for 2011-2015; Segregation data from ACS-5YR 2011-2015",
+#            position = c("RIGHT","BOTTOM"), size = 14)
+inc_map
+
+tiff("figures/dmr_income_seg_map2011-15.tif", res = 300, units = "in", 
+     height = 7.5, width = 10, compression = "lzw")
+inc_map
+dev.off()
 
 
+###################################################################
+## still working on things below here
+## graphing pollution rates by racial diversity at watershed scale
+###################################################################
 
 ## 
 seg_huc <- st_intersection(huc, seg)
