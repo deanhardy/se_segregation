@@ -155,7 +155,7 @@ dmr_sum <- dmr %>%
 se_seg_dmr <- merge(se_seg, dmr_sum, by = "Name")
   
 library(RColorBrewer)
-n <- 49
+n <- 19
 qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
 col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
 pie(rep(1,n), col=sample(col_vector, n))
@@ -163,11 +163,13 @@ col3 = sample(col_vector, n)
 
 ##plot low diversity by pollution as kg/yr/km&2
 fig <- ggplot(se_seg_dmr) +
-  geom_point(aes(PercentLD, dmr_load, col = Name), size = 3) + 
-  # geom_smooth(method = "auto", se = TRUE, linetype = "solid", level = 0.95) +
-  scale_x_continuous(limits = c(0,0.6)) +
-  xlab("% Low Diversity (People of Color)") + 
-  ylab("Pollution (kg/yr/km^2)") + 
+  geom_point(aes(PercentLD*100, dmr_load, col = Name), size = 3) + 
+  geom_smooth(aes(PercentLD*100, dmr_load), method = "loess", 
+              span = 2, se = TRUE, linetype = "solid", level = 0.95) +
+  # geom_smooth(aes(PercentLD*100, dmr_load), method = "lm", se = TRUE, linetype = "solid", level = 0.95) +
+  scale_x_continuous(limits = c(0,60)) +
+  xlab("Watershed Area (%) with Low Diversity (People of Color)") + 
+  ylab("Total Pollution Loading (kg/yr/km^2)") + 
   scale_color_manual(name = "HUC10 Watershed",
                      values = col3) +
   ggtitle("Pollution by Segregation (2011-2015)")
@@ -176,52 +178,8 @@ fig
 tiff("figures/dmr_race_seg2011-15.tiff", res = 300, compression = "lzw", units = "in", 
      height = 5.5, width = 8)
 fig
-dev.off()               
-
-
-
-
-
-# ha.test <- st_intersection(st_union(huc), st_union(arc.shp))
-# qtm(ha.test)
-
-## percent nwnl by HUC10 watershed, hence "hr"; note that this approach doesn't account for BGs
-## that were cut off, so no adjustment made for some BGs that crossover watershed boundary
-hr.sum <- huc.arc %>%
-  ungroup() %>%
-  group_by(Name) %>%
-  summarise(sum003 = sum(B03002_003), sum001 = sum(B03002_001)) %>%
-  mutate(nwnl_prc = 1-(sum003/sum001)) %>%
-  st_set_geometry(NULL)
-
-## join pollution sums and percent race by watershed
-hpr.sum <- merge(hp.sum, hr.sum, by = "Name")
-
-## create spectrum of colors for plot
-colourCount =length(unique(hpr.sum$Name))
-
-library(RColorBrewer)
-n <- 49
-qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
-col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
-pie(rep(1,n), col=sample(col_vector, n))
-col = sample(col_vector, n)
-
-##plot % nwnl by pollution as kg/yr/km&2
-fig <- ggplot(hpr.sum, aes(nwnl_prc, dmr_areasum/1000)) +
-  geom_point(aes(nwnl_prc, sum/1000, col = Name), size = 3) + 
-  geom_smooth(method = "auto", se = TRUE, linetype = "solid", level = 0.95) +
-  scale_x_continuous(limits = c(0,1)) +
-  xlab("Non-white / Non-Latinx Population (%)") + 
-  ylab("Pollution (1,000 kg/yr/km^2)") + 
-  scale_color_manual(name = "HUC10 Watershed",
-                     values = col) +
-  ggtitle("Pollution by Race (2011-2015)")
-fig
-
-tiff("figures/pollution_race_2011-15.tiff", res = 300, compression = "lzw", units = "in", 
-     height = 5.5, width = 8)
-fig
 dev.off()
+
+
 
 
