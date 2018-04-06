@@ -125,7 +125,6 @@ dev.off()
 
 
 ###################################################################
-## still working on things below here
 ## graphing pollution rates by racial diversity at watershed scale
 ###################################################################
 
