@@ -5,6 +5,8 @@ library(tidyverse)
 library(tmap)
 library(sf)
 
+census_api_key("", install = TRUE) ## Census API Key
+
 ##############################################################
 ## data import and prepping
 ##############################################################
@@ -52,8 +54,50 @@ leg_col <- c("#ff9900", "#66cc00", "#ff6666", "#9966ff",
 lbl <- c("Low (White)", "Low (African American)", "Low (Asian)", "Low (Latinx)",
          "Mod (White)", "Mod (African American)", "Mod (Latinx)", "High Diversity")
 
-## mapping
-raceseg_map <- 
+## mapping racial segregation
+seg_map <- 
+  tm_shape(huc) +
+  tm_borders(col = "white") +
+  tm_shape(filter(seg, rd15c != 0)) +
+  tm_fill("rd15c", legend.show = FALSE, palette = col) +
+  tm_add_legend(type = c("fill"), labels = lbl, col = leg_col, 
+                title = "Racial Diversity\n(by majority group)") +
+  tm_compass(type = "arrow", size = 2, position = c(0.83, 0.06)) +
+  tm_scale_bar(breaks = c(0,20), size = 0.8, position= c(0.8, 0.0)) +
+  tm_legend(position = c(-0.2, 0)) + 
+  tm_layout(main.title = "Greater Atlanta Metro Area (2011-2015)", main.title.position = "center", 
+            frame = FALSE)
+seg_map
+
+tiff("figures/dmr_raceseg_map2011-15.tif", res = 300, units = "in", 
+     height = 7.5, width = 10, compression = "lzw")
+seg_map
+dev.off()
+
+## mapping racial segregation with watersheds
+huc_map <- 
+  tm_shape(huc) +
+  tm_borders(col = "white") +
+  tm_shape(filter(seg, rd15c != 0)) +
+  tm_fill("rd15c", legend.show = FALSE, palette = col) +
+  tm_add_legend(type = c("fill"), labels = lbl, col = leg_col, 
+                title = "Racial Diversity\n(by majority group)") +
+  tm_shape(huc) +
+  tm_borders(col = "black") +
+  tm_compass(type = "arrow", size = 2, position = c(0.83, 0.06)) +
+  tm_scale_bar(breaks = c(0,20), size = 0.8, position= c(0.8, 0.0)) +
+  tm_legend(position = c(-0.2, 0)) + 
+  tm_layout(main.title = "Greater Atlanta Metro Area (2011-2015)", main.title.position = "center", 
+            frame = FALSE)
+huc_map
+
+tiff("figures/dmr_raceseg_huc_map2011-15.tif", res = 300, units = "in", 
+     height = 7.5, width = 10, compression = "lzw")
+huc_map
+dev.off()
+
+## mapping racial segregation with watersheds and pollution
+dmr_map <- 
   tm_shape(huc) +
   tm_borders(col = "white") +
   tm_shape(filter(seg, rd15c != 0)) +
@@ -70,13 +114,11 @@ raceseg_map <-
   tm_legend(position = c(-0.2, 0)) + 
   tm_layout(main.title = "Greater Atlanta Metro Area (2011-2015)", main.title.position = "center", 
             frame = FALSE)
-  # tm_credits("*Pollution data from EPA Discharge Monitoring Report for 2011-2015; Segregation data from ACS-5YR 2011-2015",
-  #            position = c("RIGHT","BOTTOM"), size = 14)
-raceseg_map
+dmr_map
 
-tiff("figures/dmr_race_seg_map2011-15.tif", res = 300, units = "in", 
+tiff("figures/dmr_raceseg_hucdmr_map2011-15.tif", res = 300, units = "in", 
      height = 7.5, width = 10, compression = "lzw")
-raceseg_map
+dmr_map
 dev.off()
 
 

@@ -6,7 +6,7 @@ library(tidycensus)
 library(tmap)
 library(sf)
 
-# census_api_key("") ## Already installed
+# census_api_key("") ## install personal census API key
 
 ##############################################################
 ## data import and prepping
