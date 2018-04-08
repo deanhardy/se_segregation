@@ -2,10 +2,13 @@ rm(list=ls())
 
 ##then packages are loaded into the R environment
 library(tidyverse)
+library(tidycensus)
+library(tigris)
 library(tmap)
 library(sf)
 
 census_api_key("", install = TRUE) ## Census API Key
+yr <- '2015'
 
 ##############################################################
 ## data import and prepping
@@ -40,6 +43,15 @@ dmr <- rbind(dmr11, dmr12, dmr13, dmr14, dmr15) %>%
   st_intersection(seg) %>%
   select(NPDES.Permit.Number, HUC10, Name, dmr_area)
 
+## import spatial data for counties as "background" to map
+bkgd <- get_acs(geography = "county", 
+               variables = "B03002_001E",
+               state = c("AL", "GA", "SC"), 
+               year = yr, geometry = TRUE)
+bkgd <- st_zm(bkgd) ## drop "Z" data
+
+## grab roads for cartographic purposes
+rd <- primary_roads(year = yr)
 
 ##################################################################
 ## map ARC RACE DIVERSITY data with watersheds and DMR overlaid
@@ -58,18 +70,29 @@ lbl <- c("Low (White)", "Low (African American)", "Low (Asian)", "Low (Latinx)",
 seg_map <- 
   tm_shape(huc) +
   tm_borders(col = "white") +
+  tm_shape(bkgd) +
+  tm_fill(col = "azure1") +
   tm_shape(filter(seg, rd15c != 0)) +
   tm_fill("rd15c", legend.show = FALSE, palette = col) +
+  tm_shape(rd) + 
+  tm_lines(col = "black") +
+  tm_shape(bkgd) +
+  tm_borders() +
   tm_add_legend(type = c("fill"), labels = lbl, col = leg_col, 
                 title = "Racial Diversity\n(by majority group)") +
-  tm_compass(type = "arrow", size = 2, position = c(0.83, 0.06)) +
-  tm_scale_bar(breaks = c(0,20), size = 0.8, position= c(0.8, 0.0)) +
-  tm_legend(position = c(-0.2, 0)) + 
-  tm_layout(main.title = "Greater Atlanta Metro Area (2011-2015)", main.title.position = "center", 
-            frame = FALSE)
+  tm_compass(type = "arrow", size = 4, position = c(0.82, 0.08)) +
+  tm_scale_bar(breaks = c(0,20), size = 1.1, position= c(0.8, 0.0)) +
+  tm_legend(position = c(0.025, 0.05),
+            bg.color = "white",
+            frame = TRUE,
+            legend.text.size = 1.1,
+            legend.title.size = 1.4) + 
+  tm_layout(frame = FALSE, 
+            outer.margins=c(0,0,0,0), 
+            inner.margins=c(0,0,0,0), asp=0)
 seg_map
 
-tiff("figures/dmr_raceseg_map2011-15.tif", res = 300, units = "in", 
+tiff("figures/raceseg_map2011-15.tif", res = 300, units = "in", 
      height = 7.5, width = 10, compression = "lzw")
 seg_map
 dev.off()
@@ -78,20 +101,29 @@ dev.off()
 huc_map <- 
   tm_shape(huc) +
   tm_borders(col = "white") +
+  tm_shape(bkgd) +
+  tm_fill(col = "azure1") +
   tm_shape(filter(seg, rd15c != 0)) +
   tm_fill("rd15c", legend.show = FALSE, palette = col) +
+  tm_shape(bkgd) +
+  tm_borders() +
+  tm_shape(filter(huc, PERCENTAGE >= 50)) +
+  tm_borders(col = "black") +
   tm_add_legend(type = c("fill"), labels = lbl, col = leg_col, 
                 title = "Racial Diversity\n(by majority group)") +
-  tm_shape(huc) +
-  tm_borders(col = "black") +
-  tm_compass(type = "arrow", size = 2, position = c(0.83, 0.06)) +
-  tm_scale_bar(breaks = c(0,20), size = 0.8, position= c(0.8, 0.0)) +
-  tm_legend(position = c(-0.2, 0)) + 
-  tm_layout(main.title = "Greater Atlanta Metro Area (2011-2015)", main.title.position = "center", 
-            frame = FALSE)
+  tm_compass(type = "arrow", size = 4, position = c(0.82, 0.08)) +
+  tm_scale_bar(breaks = c(0,20), size = 1.1, position= c(0.8, 0.0)) +
+  tm_legend(position = c(0.025, 0.05),
+            bg.color = "white",
+            frame = TRUE,
+            legend.text.size = 1.1,
+            legend.title.size = 1.4) + 
+  tm_layout(frame = FALSE, 
+            outer.margins=c(0,0,0,0), 
+            inner.margins=c(0,0,0,0), asp=0)
 huc_map
 
-tiff("figures/dmr_raceseg_huc_map2011-15.tif", res = 300, units = "in", 
+tiff("figures/raceseg_huc_map2011-15.tif", res = 300, units = "in", 
      height = 7.5, width = 10, compression = "lzw")
 huc_map
 dev.off()
@@ -100,23 +132,32 @@ dev.off()
 dmr_map <- 
   tm_shape(huc) +
   tm_borders(col = "white") +
+  tm_shape(bkgd) +
+  tm_fill(col = "azure1") +
   tm_shape(filter(seg, rd15c != 0)) +
   tm_fill("rd15c", legend.show = FALSE, palette = col) +
+  tm_shape(bkgd) +
+  tm_borders() +
+  tm_shape(filter(huc, PERCENTAGE >= 50)) +
+  tm_borders(col = "black") +
   tm_add_legend(type = c("fill"), labels = lbl, col = leg_col, 
                 title = "Racial Diversity\n(by majority group)") +
-  tm_shape(huc) +
-  tm_borders(col = "black") +
   tm_shape(dmr) + 
   tm_bubbles(size = "dmr_area", col = "black", scale = 2, title.size = "Pollution (kg/yr/km^2)",
-             size.lim = c(0,1.5e3), sizes.legend = c(10, 100, 250, 500, 750, 1000)) + 
-  tm_compass(type = "arrow", size = 2, position = c(0.83, 0.06)) +
-  tm_scale_bar(breaks = c(0,20), size = 0.8, position= c(0.8, 0.0)) +
-  tm_legend(position = c(-0.2, 0)) + 
-  tm_layout(main.title = "Greater Atlanta Metro Area (2011-2015)", main.title.position = "center", 
-            frame = FALSE)
+             size.lim = c(0,1500), sizes.legend = c(10, 100, 500, 1000)) + 
+  tm_compass(type = "arrow", size = 4, position = c(0.82, 0.08)) +
+  tm_scale_bar(breaks = c(0,20), size = 1.1, position= c(0.8, 0.0)) +
+  tm_legend(position = c(0.025, 0.05),
+            bg.color = "white",
+            frame = TRUE,
+            legend.text.size = 1.1,
+            legend.title.size = 1.4) + 
+  tm_layout(frame = FALSE, 
+            outer.margins=c(0,0,0,0), 
+            inner.margins=c(0,0,0,0), asp=0)
 dmr_map
 
-tiff("figures/dmr_raceseg_hucdmr_map2011-15.tif", res = 300, units = "in", 
+tiff("figures/raceseg_hucdmr_map2011-15.tif", res = 300, units = "in", 
      height = 7.5, width = 10, compression = "lzw")
 dmr_map
 dev.off()
