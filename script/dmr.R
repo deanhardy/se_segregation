@@ -3,6 +3,7 @@ rm(list=ls())
 ##then packages are loaded into the R environment
 library(tidyverse)
 library(tidycensus)
+library(tigris)
 library(tmap)
 library(sf)
 
@@ -55,7 +56,7 @@ shp <- get_acs(geography = "block group",
 shp <- st_zm(shp) ## drop "Z" data
 
 ## append census race data to spatial data
-arc.shp <- left_join(shp, arc, by = "GEOID", copy = TRUE) %>%
+arc_shp <- left_join(shp, arc, by = "GEOID", copy = TRUE) %>%
   dplyr::select(-moe, -variable, -NAME) %>%
   rename(B03002_001 = estimate) %>%
   mutate(perc_POC = 1-(B03002_003/B03002_001)) %>%
@@ -81,43 +82,47 @@ dmr <- rbind(dmr11, dmr12, dmr13, dmr14, dmr15) %>%
   st_intersection(arc.shp) %>%
   select(NPDES.Permit.Number, HUC10, Name, dmr_area)
 
+## import spatial data for counties as "background" to map
+bkgd <- get_acs(geography = "county", 
+                variables = "B03002_001E",
+                state = c("AL", "GA", "SC"), 
+                year = yr, geometry = TRUE)
+bkgd <- st_zm(bkgd) ## drop "Z" data
+
+## grab roads for cartographic purposes
+rd <- primary_roads(year = yr)
 
 
 ##################################################################
-## map ARC RACE DIVERSITY data with watersheds and DMR overlaid
-## still working out clipping of huc to ARC region
+## map ARC RACE PERCENTAGE data
 ##################################################################
 
-## create custom palette with custom legend labels for seg indices
-col <- c("white", "#ff9900", "#66cc00", "#ff6666", "#9966ff", 
-         "#ffcc99", "#99ff99", "#ff9999", "#99752e")
-leg_col <- c("#ff9900", "#66cc00", "#ff6666", "#9966ff", 
-             "#ffcc99", "#99ff99", "#ff9999", "#99752e")
-lbl <- c("Low (White)", "Low (African American)", "Low (Asian)", "Low (Latinx)",
-         "Mod (White)", "Mod (African American)", "Mod (Latinx)", "High Diversity")
-
-## mapping
+## mapping racial percentages
 race_map <- 
   tm_shape(huc) +
   tm_borders(col = "white") +
-  tm_shape(arc.shp) +
-  tm_fill("perc_POC", palette = "Purples", 
+  tm_shape(bkgd) +
+  tm_fill(col = "azure1") +
+  tm_shape(arc_shp) +
+  tm_fill("perc_POC", palette = "Greens",
           title = "People of Color (%)") +
-  # tm_add_legend(type = c("fill"), labels = lbl, col = leg_col, 
-  #               title = "Racial Diversity\n(by majority group)") +
-  tm_shape(huc) +
-  tm_borders(col = "black") +
-  tm_shape(dmr) + 
-  tm_bubbles(size = "dmr_area", col = "black", scale = 2, title.size = "Pollution (kg/yr/km^2)",
-             size.lim = c(0,1.5e3), sizes.legend = c(10, 100, 250, 500, 750, 1000)) + 
-  tm_compass(type = "arrow", size = 2, position = c(0.82, 0.07)) +
-  tm_scale_bar(breaks = c(0,20), size = 0.8, position= c(0.8, 0.0)) +
-  tm_legend(position = c(-0.22, 0)) + 
-  tm_layout(main.title = "Greater Atlanta Metro Area (2011-2015)", main.title.position = "center", 
-            frame = FALSE)
+  tm_shape(rd) + 
+  tm_lines(col = "black") +
+  tm_shape(bkgd) +
+  tm_borders() +
+  tm_compass(type = "arrow", size = 4, position = c(0.82, 0.08)) +
+  tm_scale_bar(breaks = c(0,20), size = 1.1, position= c(0.8, 0.0)) +
+  tm_legend(position = c(0.025, 0.05),
+            bg.color = "white",
+            frame = TRUE,
+            legend.text.size = 1.1,
+            legend.title.size = 1.4) + 
+  tm_layout(frame = FALSE, 
+            outer.margins=c(0,0,0,0), 
+            inner.margins=c(0,0,0,0), asp=0)
 race_map
 
-tiff("figures/dmr_race_map2011-15.tif", res = 300, units = "in", 
+tiff("figures/racepercent_map2011-15.tif", res = 300, units = "in", 
      height = 7.5, width = 10, compression = "lzw")
 race_map
 dev.off()
