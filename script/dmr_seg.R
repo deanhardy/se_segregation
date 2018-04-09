@@ -55,7 +55,6 @@ rd <- primary_roads(year = yr)
 
 ##################################################################
 ## map ARC RACE DIVERSITY data with watersheds and DMR overlaid
-## still working out clipping of huc to ARC region
 ##################################################################
 
 ## create custom palette with custom legend labels for seg indices

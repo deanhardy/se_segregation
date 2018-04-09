@@ -14,15 +14,6 @@ yr <- '2015'
 ## data import and prepping
 ##############################################################
 
-## import HUC10 data
-huc <- st_read("data/spatial/huc10.shp") %>%
-  st_transform(4269)
-
-## import segregation/diversity data from 2011-2015 ACS
-seg <- st_read("data/geojson/arc15.geojson") %>%
-  mutate(rd15c = as.factor(rd15c), i15c = as.factor(i15c)) %>%
-  st_transform(4269)
-
 ## convert sso shapefile to csv for manual cleaning of ESTIMATED column in Excel
 ## only needed to do once
 # st_read("data/sso/sso.shp") %>%
@@ -37,123 +28,144 @@ sso <- read.csv("data/sso/sso.csv") %>%
   filter(ESTIMATED != "NA", YEAR %in% c(2012, 2013, 2014, 2015, 2016)) %>%
   st_as_sf(., coords = c("X", "Y"), crs = 4269)
 
+## import HUC10 data
+huc <- st_read("data/spatial/huc10.shp") %>%
+  st_transform(4269)
+
+## import segregation/diversity data from 2011-2015 ACS
+seg <- st_read("data/geojson/arc15.geojson") %>%
+  mutate(rd15c = as.factor(rd15c), i15c = as.factor(i15c)) %>%
+  st_transform(4269) %>%
+  filter(county == "DeKalb County")
+
 ## import spatial data for counties as "background" to map
 bkgd <- get_acs(geography = "county", 
                 variables = "B03002_001E",
-                state = c("AL", "GA", "SC"), 
+                state = c("GA"), 
                 year = yr, geometry = TRUE)
 bkgd <- st_zm(bkgd) ## drop "Z" data
 
 ## grab roads for cartographic purposes
 rd <- primary_roads(year = yr)
 
-## sum sso volumes
-# sso.vol <- sso %>%
-#   summarise(sum = sum(ESTIMATED, na.rm = TRUE))
-
-## import ACS data for DeKalb
-## transform ACS census data for joining to spatial data
-dkb <- get_acs(geography = "block group", 
-               variables = race_vars,
-               state = "GA", county = "DeKalb", 
-               year = yr) %>%
-  select(-NAME, -moe) %>%
-  spread(key = "variable", value = "estimate")
-
-## import spatial data for "cnty" region
+## import spatial data for defining map area
 shp <- get_acs(geography = "block group", 
                variables = "B03002_001E",
                state = "GA", county = "DeKalb", 
                year = yr, geometry = TRUE)
 shp <- st_zm(shp) ## drop "Z" data
 
-## plot to confirm extent
-qtm(shp, fill = "estimate")
+##################################################################
+## map DeKalb RACE PERCENTAGE data
+##################################################################
 
-## append census race data to spatial data
-dkb.shp <- left_join(shp, dkb, by = "GEOID", copy = TRUE) %>%
-  select(-moe, -variable, -NAME) %>%
-  rename(B03002_001 = estimate) %>%
-  mutate(nwnl_prc = 1-(B03002_003/B03002_001)) %>%
-  st_transform(4269)
+## create custom palette with custom legend labels for seg indices
+col <- c("white", "#ff9900", "#66cc00", "#ff6666", "#9966ff", 
+         "#ffcc99", "#99ff99", "#ff9999", "#99752e")
+leg_col <- c("#ff9900", "#66cc00", "#ff6666", "#9966ff", 
+             "#ffcc99", "#99ff99", "#ff9999", "#99752e")
+lbl <- c("Low (White)", "Low (African American)", "Low (Asian)", "Low (Latinx)",
+         "Mod (White)", "Mod (African American)", "Mod (Latinx)", "High Diversity")
 
-## map DKB census data for NWNL people
-map <- tm_shape(dkb.shp) +
-  tm_polygons("nwnl_prc",
-              palette = "Purples",
-              title = "Non-White,\nNon-Latinx\nPopulation (%)") +
-  tm_compass(type = "arrow", size = 3, position = c(0.05, 0.1)) +
-  tm_scale_bar(breaks = c(0,10), size = 0.8, position= c(0.06, 0.04)) +
-  tm_legend(position = c(0.9,0.05)) +
-  tm_layout(main.title = "DeKalb County (2011-15)", main.title.position = "center", frame = FALSE)
-map
+## mapping racial segregation with watersheds and pollution
+sso_map <- 
+  tm_shape(shp) +
+  tm_fill() +
+  tm_shape(bkgd) +
+  tm_fill(col = "azure1") +
+  tm_shape(filter(seg, rd15c != 0)) +
+  tm_fill("rd15c", legend.show = FALSE, palette = col) +
+  tm_shape(bkgd) +
+  tm_borders() +
+  tm_shape(filter(huc, PERCENTAGE >= 50)) +
+  tm_borders(col = "black") +
+  tm_add_legend(type = c("fill"), labels = lbl, col = leg_col, 
+                title = "Racial Diversity\n(by majority group)") +
+  tm_shape(sso) +
+  tm_bubbles(size = "ESTIMATED", col = "black", scale = 2, title.size = "SSO Volume (Gallons)",
+             size.lim = c(0,6.5e5), sizes.legend = c(1e5, 3e5, 6e5)) + 
+  tm_compass(type = "arrow", size = 4, position = c(0.82, 0.08)) +
+  tm_scale_bar(breaks = c(0,5), size = 1.1, position= c(0.8, 0.0)) +
+  tm_legend(position = c(0.01, 0.05),
+            bg.color = "white",
+            frame = TRUE,
+            legend.text.size = 1.1,
+            legend.title.size = 1.4) + 
+  tm_layout(frame = FALSE, 
+            outer.margins=c(0,0,0,0), 
+            inner.margins=c(0,0,0,0), asp=3.2/2)
+sso_map
 
-dkb.huc <- st_intersection(dkb.shp, huc)
-qtm(dkb.huc, fill = "nwnl_prc")
-
-## union ARC race data with DMR summed data
-huc.sso <- st_intersection(huc, sso)
-
-## map ARC race data with watersheds and DMR overlaid
-map <- tm_shape(dkb.shp) +
-  tm_polygons("nwnl_prc",
-              palette = "Greys",
-              title = "Non-White /\nNon-Latinx\nPopulation (%)") +
-  tm_shape(huc) + 
-  tm_borders(col = "yellow") +
-  tm_shape(huc.sso) + 
-  tm_bubbles(size = "ESTIMATED", col = "green", scale = 2, title.size = "Volume (Gallons)") + 
-  tm_compass(type = "arrow", size = 2, position = c(0.8, 0.07)) +
-  tm_scale_bar(breaks = c(0,3), size = 0.6, position= c(0.8, 0.0)) +
-  tm_legend(position = c(-0.3, 0)) + 
-  tm_layout(main.title = "DeKalb (2012-2016)", main.title.position = "center", 
-            frame = FALSE)
-map
-
-tiff("figures/dekalb_sso_map2012-16.tif", res = 300, units = "in", height = 7.5, width = 8.5, compression = "lzw")
-map
+tiff("figures/dkb_raceseg_hucsso_map2011-15.tif", res = 300, units = "in", 
+     height = 7.5, width = 12, compression = "lzw")
+sso_map
 dev.off()
 
 
-## sum pollution by HUC10 watershed, hence "hp"
-hp.sum <- huc.sso %>%
+###################################################################
+## graphing pollution rates by racial diversity at watershed scale
+###################################################################
+
+## calculate the area of seg block groups within each watershed
+## via https://rpubs.com/rural_gis/255550
+int <- as.tibble(st_intersection(seg, huc))
+
+#add in an area count column to the tibble & calc area and percent area for each BG by watershed
+library(lwgeom)
+int2 <- int %>%
+  mutate(AreaSqKM_BGinHUC = as.numeric((st_area(int$geometry) / 1e6))) %>%
+  mutate(percBGinHUC = AreaSqKM_BGinHUC/(aland+awater)*1e6)
+
+## Want the percent of each watershed that has low diversity with majority people of color
+## will plot that against volume sso per area
+se_seg <- int2 %>%
+  filter(PERCENTAGE >= 50) %>%
+  mutate(lowdiv_AreaSQKM = ifelse(rd15c %in% c(3,4,5,6,7), AreaSqKM_BGinHUC, 0)) %>%
   group_by(Name) %>%
-  summarise(sum = sum(ESTIMATED/AreaSqKm)) %>%
-  st_set_geometry(NULL)
+  summarise(Area_LD = sum(lowdiv_AreaSQKM), Area_HUC = sum(AreaSqKM_BGinHUC)) %>%
+  mutate(PercentLD = Area_LD/Area_HUC)
 
-## percent nwnl by HUC10 watershed, hence "hr"; note that this approach doesn't account for BGs
-## that were cut off, so no adjustment made for some BGs that crossover watershed boundary
-hr.sum <- dkb.huc %>%
-  ungroup() %>%
+## calculate total area as SqKM of DeKalb by HUC
+dkb_huc <- int %>%
+  mutate(AreaSqKM_BGinHUC = as.numeric((st_area(int$geometry) / 1e6))) %>%
   group_by(Name) %>%
-  summarise(sum003 = sum(B03002_003), sum001 = sum(B03002_001)) %>%
-  mutate(nwnl_prc = 1-(sum003/sum001)) %>%
-  st_set_geometry(NULL)
+  summarise(AreaSqKMinHUC = sum(AreaSqKM_BGinHUC)) %>%
+  select(Name, AreaSqKMinHUC)
 
-## join pollution sums and percent race by watershed
-hpr.sum <- merge(hp.sum, hr.sum, by = "Name")
+dkb_huc2 <- left_join(huc, dkb_huc, by = 'Name') %>%
+  filter(AreaSqKMinHUC != 'NA') %>%
+  select(Name, AreaSqKMinHUC)
 
-library(RColorBrewer)
-n <- 20
-qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
-col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
-pie(rep(1,n), col=sample(col_vector, n))
-col = sample(col_vector, n)
+## sum sso loading by huc area in dekalb
+sso_sum <- 
+  st_intersection(dkb_huc2, sso) %>%
+  mutate(loadSqKM = ESTIMATED/AreaSqKMinHUC) %>%
+  group_by(Name) %>%
+  summarise(SSOloadSqKM = sum(ESTIMATED))
 
-##plot % nwnl by pollution as kg/yr/km&2
-fig <- ggplot(hpr.sum, aes(nwnl_prc, sum)) +
-  geom_point(aes(nwnl_prc, sum, col = Name), size = 3) + 
-  geom_smooth(method = "lm", se = TRUE, linetype = "solid", level = 0.95) +
-  scale_x_continuous(limits = c(0,1)) +
-  xlab("Non-white / Non-Latinx Population (%)") + 
-  ylab("SSO Volume (Gallons/KM^2)") + 
+se_seg_sso <- merge(se_seg,sso_sum, by = "Name")
+
+col <- c("blue", "red", "yellow", "green", "black", "purple")
+
+##plot low diversity by pollution as kg/yr/km&2
+fig <- ggplot(se_seg_sso) +
+  # geom_smooth(aes(PercentLD*100, SSOloadSqKM), method = "loess", 
+  #             span = 2, se = TRUE, linetype = "solid", level = 0.95) +
+  geom_smooth(aes(PercentLD*100, SSOloadSqKM/1000), method = "lm", 
+              se = TRUE, linetype = "dashed", level = 0.95) +
+  geom_point(aes(PercentLD*100, SSOloadSqKM/1000, col = Name), size = 3) + 
+  # scale_x_continuous(limits = c(0,100)) +
+  # scale_y_continuous(limits = c(-250,1500)) +
+  xlab("Watershed Area (%) with Low Diversity (People of Color)") + 
+  ylab("SSO Volume (1000 Gallons/km^2)") + 
   scale_color_manual(name = "HUC10 Watershed",
                      values = col) +
-  ggtitle("Pollution by Race (2012-2016)")
+  ggtitle("Pollution by Segregation (2011-2015)")
 fig
 
-tiff("figures/dekalb_sso_by_race_2012-16.tiff", res = 300, compression = "lzw", units = "in", 
+tiff("figures/dkb_sso2012-2016_raceseg2011-15.tiff", res = 300, compression = "lzw", units = "in", 
      height = 5.5, width = 8)
 fig
 dev.off()
+
 

@@ -184,7 +184,7 @@ fig <- ggplot(se_race_sso) +
               se = TRUE, linetype = "dashed", level = 0.95) +
   geom_point(aes(percPOCinHUC*100, SSOloadSqKM/1000, col = Name), size = 3) + 
   scale_x_continuous(limits = c(0,100)) +
-  scale_y_continuous(limits = c(-2000,3300)) +
+  # scale_y_continuous(limits = c(-2000,3300)) +
   xlab("People of Color (%)") + 
   ylab("SSO Volume (1000 Gallons/KM^2)") + 
   scale_color_manual(name = "HUC10 Watershed",
