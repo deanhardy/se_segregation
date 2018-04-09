@@ -70,7 +70,7 @@ shp <- left_join(shp, bg, by = "GEOID")
 arc_shp <- left_join(shp, arc, by = "GEOID", copy = TRUE) %>%
   dplyr::select(-moe, -variable, -NAME) %>%
   rename(B03002_001 = estimate) %>%
-  mutate(perc_POC = 1-(B03002_003/B03002_001)) %>%
+  mutate(perc_POC = 1-(B03002_003/B03002_001), count_POC = B03002_001 - B03002_003) %>%
   st_as_sf() %>%
   st_transform(4269)
 
@@ -90,7 +90,7 @@ dmr <- rbind(dmr11, dmr12, dmr13, dmr14, dmr15) %>%
   summarise(sum = sum(Pollutant.Load..kg.yr., na.rm = TRUE)) %>% ## extract load data from dmr, summarize by facility
   st_intersection(huc) %>%
   mutate(dmr_area = sum/(AreaSqKm * PERCENTAGE)) %>%
-  st_intersection(arc.shp) %>%
+  st_intersection(arc_shp) %>%
   select(NPDES.Permit.Number, HUC10, Name, dmr_area)
 
 ## import spatial data for counties as "background" to map
@@ -146,49 +146,57 @@ dev.off()
 ### need to start with se_race and figure out how to calculate the percent of people of color by watershed
 #####################################################################
 
-## calculate the area of seg block groups within each watershed
+## calculate the area of block groups within each watershed
+## begin by intersecting features and creating "fragments" by spliting BGs by HUCs
 ## via https://rpubs.com/rural_gis/255550
 int <- as.tibble(st_intersection(arc_shp, huc))
 
-## add in an area count column to the tibble & calc area and percent area for each BG by watershed
-library(lwgeom)
-int <- int %>%
-  mutate(AreaSqKmHUC = as.numeric((st_area(int$geometry) / 1e6))) %>%
-  mutate(PercentHUC = AreaSqKmHUC/(aland+awater)*1e6)
-
-## Want the percent of each watershed that has people of color
+## Want the percent of POC in each watershed
 ## will plot that against volume dmr per year per area
+## add in an area count column to the tibble & calc area and percent area for each BG fragment by watershed
+## then calculate count of POC and total POP in each BG fragment by HUC
+library(lwgeom)
 se_race <- int %>%
-  filter(PERCENTAGE >= 50) %>%
-  mutate(perc_POC_huc = PercentHUC * perc_POC) #%>%
+  mutate(AreaSqKm_BGinHUC = as.numeric((st_area(int$geometry) / 1e6))) %>%
+  mutate(perc_BGinHUC = AreaSqKm_BGinHUC/(aland+awater)*1e6) %>%
+  mutate(count_POCinHUC = perc_BGinHUC * count_POC, 
+         count_POPinHUC = perc_BGinHUC * B03002_001) %>%
   group_by(Name) %>%
-  summarise(Area_LD = sum(lowdiv_AreaSQKM), Area_HUC = sum(AreaSqKmHUC)) %>%
-  mutate(PercentLD = Area_LD/Area_HUC)
+  filter(PERCENTAGE >= 50) %>%
+  summarise(sumPOCinHUC = sum(count_POCinHUC), sumPOPinHUC = sum(count_POPinHUC)) %>%
+  mutate(percPOCinHUC = sumPOCinHUC/sumPOPinHUC)
 
 dmr_sum <- dmr %>%
   group_by(Name) %>%
-  summarise(dmr_load = sum(dmr_area))
+  filter(Name %in% se_race$Name) %>%
+  summarise(dmr_load = sum(dmr_area)) %>%
+  st_set_geometry(NULL)
 
-se_seg_dmr <- merge(se_seg, dmr_sum, by = "Name")
+se_race_dmr <- merge(se_race, dmr_sum, by = "Name")
 
-library(RColorBrewer)
-n <- 19
-qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
-col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
-pie(rep(1,n), col=sample(col_vector, n))
-col3 = sample(col_vector, n)
+# library(RColorBrewer)
+# n <- 19
+# qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
+# col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
+# pie(rep(1,n), col=sample(col_vector, n))
+# col3 = sample(col_vector, n)
 
+col <- c("#4DAF4A", "#A6761D", "#8DA0CB", "#7570B3", "#377EB8", "#FED9A6", "#66A61E", "#A6CEE3", "#66C2A5", "#FB8072",
+         "#A65628", "#B3CDE3", "#E78AC3", "#D95F02", "#FFFFCC", "#A6D854", "#666666", "#FFFFB3", "#B2DF8A")
+  
 ##plot low diversity by pollution as kg/yr/km&2
-fig <- ggplot(se_seg_dmr) +
-  geom_point(aes(PercentLD*100, dmr_load, col = Name), size = 3) + 
-  geom_smooth(aes(PercentLD*100, dmr_load), method = "loess", 
+fig <- ggplot(se_race_dmr) +
+  geom_smooth(aes(percPOCinHUC*100, dmr_load), method = "loess", 
               span = 2, se = TRUE, linetype = "solid", level = 0.95) +
-  # geom_smooth(aes(PercentLD*100, dmr_load), method = "lm", se = TRUE, linetype = "solid", level = 0.95) +
-  scale_x_continuous(limits = c(0,60)) +
-  xlab("Watershed Area (%) with Low Diversity (People of Color)") + 
+  geom_smooth(aes(percPOCinHUC*100, dmr_load), method = "lm", 
+              span = 2, se = FALSE, linetype = "dashed", level = 0.95) +
+  geom_point(aes(percPOCinHUC*100, dmr_load, col = Name), size = 3) + 
+  scale_x_continuous(limits = c(0,100)) +
+  scale_y_continuous(limits = c(-250,1500)) +
+  xlab("People of Color (%)") + 
   ylab("Total Pollution Loading (kg/yr/km^2)") + 
   scale_color_manual(name = "HUC10 Watershed",
-                     values = col3) +
+                     values = col) +
   ggtitle("Pollution by Race (2011-2015)")
 fig
 

@@ -7,7 +7,7 @@ library(tigris)
 library(tmap)
 library(sf)
 
-census_api_key("", install = TRUE) ## Census API Key
+# census_api_key("", install = TRUE) ## Census API Key
 yr <- '2015'
 
 ##############################################################
@@ -219,7 +219,7 @@ int <- as.tibble(st_intersection(seg, huc))
 library(lwgeom)
 int <- int %>%
   mutate(AreaSqKmHUC = as.numeric((st_area(int$geometry) / 1e6))) %>%
-  mutate(PercentHUC = AreaSqKmHUC/(aland+awater)*1e6)
+  mutate(percBGinHUC = AreaSqKmHUC/(aland+awater)*1e6)
 
 ## Want the percent of each watershed that has low diversity with majority people of color
 ## will plot that against volume dmr per year per area
@@ -236,24 +236,30 @@ dmr_sum <- dmr %>%
 
 se_seg_dmr <- merge(se_seg, dmr_sum, by = "Name")
   
-library(RColorBrewer)
-n <- 19
-qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
-col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
-pie(rep(1,n), col=sample(col_vector, n))
-col3 = sample(col_vector, n)
+# library(RColorBrewer)
+# n <- 19
+# qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
+# col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
+# pie(rep(1,n), col=sample(col_vector, n))
+# col3 = sample(col_vector, n)
+
+
+col <- c("#4DAF4A", "#A6761D", "#8DA0CB", "#7570B3", "#377EB8", "#FED9A6", "#66A61E", "#A6CEE3", "#66C2A5", "#FB8072",
+         "#A65628", "#B3CDE3", "#E78AC3", "#D95F02", "#FFFFCC", "#A6D854", "#666666", "#FFFFB3", "#B2DF8A")
 
 ##plot low diversity by pollution as kg/yr/km&2
 fig <- ggplot(se_seg_dmr) +
-  geom_point(aes(PercentLD*100, dmr_load, col = Name), size = 3) + 
   geom_smooth(aes(PercentLD*100, dmr_load), method = "loess", 
               span = 2, se = TRUE, linetype = "solid", level = 0.95) +
-  # geom_smooth(aes(PercentLD*100, dmr_load), method = "lm", se = TRUE, linetype = "solid", level = 0.95) +
+  geom_smooth(aes(PercentLD*100, dmr_load), method = "lm", 
+              se = FALSE, linetype = "dashed", level = 0.95) +
+  geom_point(aes(PercentLD*100, dmr_load, col = Name), size = 3) + 
   scale_x_continuous(limits = c(0,60)) +
+  scale_y_continuous(limits = c(-250,1500)) +
   xlab("Watershed Area (%) with Low Diversity (People of Color)") + 
   ylab("Total Pollution Loading (kg/yr/km^2)") + 
   scale_color_manual(name = "HUC10 Watershed",
-                     values = col3) +
+                     values = col) +
   ggtitle("Pollution by Segregation (2011-2015)")
 fig
 
