@@ -55,6 +55,17 @@ shp <- get_acs(geography = "block group",
                year = yr, geometry = TRUE)
 shp <- st_zm(shp) ## drop "Z" data
 
+## grab aland and awater from tigris data
+bg <- block_groups("Georgia", cnty) %>%
+  st_as_sf() %>%
+  select(GEOID, ALAND, AWATER) %>%
+  rename(aland = ALAND, awater = AWATER) %>%
+  mutate(aland = as.numeric(aland), awater = as.numeric(awater)) %>%
+  st_set_geometry(NULL)
+
+## 
+shp <- left_join(shp, bg, by = "GEOID")
+
 ## append census race data to spatial data
 arc_shp <- left_join(shp, arc, by = "GEOID", copy = TRUE) %>%
   dplyr::select(-moe, -variable, -NAME) %>%
@@ -91,6 +102,7 @@ bkgd <- st_zm(bkgd) ## drop "Z" data
 
 ## grab roads for cartographic purposes
 rd <- primary_roads(year = yr)
+
 
 
 ##################################################################
@@ -130,26 +142,25 @@ dev.off()
 
 #####################################################################
 ## graphing pollution rates by racial percentages at watershed scale
+
+### need to start with se_race and figure out how to calculate the percent of people of color by watershed
 #####################################################################
 
 ## calculate the area of seg block groups within each watershed
 ## via https://rpubs.com/rural_gis/255550
-int <- as.tibble(st_intersection(arc.shp, huc))
+int <- as.tibble(st_intersection(arc_shp, huc))
 
-###
-# need to grab aland and awater via tidycensus for arc.shp!!!!
-###
-# add in an area count column to the tibble & calc area and percent area for each BG by watershed
+## add in an area count column to the tibble & calc area and percent area for each BG by watershed
 library(lwgeom)
 int <- int %>%
   mutate(AreaSqKmHUC = as.numeric((st_area(int$geometry) / 1e6))) %>%
   mutate(PercentHUC = AreaSqKmHUC/(aland+awater)*1e6)
 
-## Want the percent of each watershed that has low diversity with majority people of color
+## Want the percent of each watershed that has people of color
 ## will plot that against volume dmr per year per area
-se_seg <- int %>%
+se_race <- int %>%
   filter(PERCENTAGE >= 50) %>%
-  mutate(lowdiv_AreaSQKM = ifelse(rd15c %in% c(3,4,5,6,7), AreaSqKmHUC, 0)) %>%
+  mutate(perc_POC_huc = PercentHUC * perc_POC) #%>%
   group_by(Name) %>%
   summarise(Area_LD = sum(lowdiv_AreaSQKM), Area_HUC = sum(AreaSqKmHUC)) %>%
   mutate(PercentLD = Area_LD/Area_HUC)
@@ -178,10 +189,10 @@ fig <- ggplot(se_seg_dmr) +
   ylab("Total Pollution Loading (kg/yr/km^2)") + 
   scale_color_manual(name = "HUC10 Watershed",
                      values = col3) +
-  ggtitle("Pollution by Segregation (2011-2015)")
+  ggtitle("Pollution by Race (2011-2015)")
 fig
 
-tiff("figures/dmr_race_seg2011-15.tiff", res = 300, compression = "lzw", units = "in", 
+tiff("figures/dmr_race2011-15.tiff", res = 300, compression = "lzw", units = "in", 
      height = 5.5, width = 8)
 fig
 dev.off()
