@@ -14,7 +14,7 @@ yr <- '2015'
 ## data import and prepping
 ##############################################################
 
-##import HUC10 data
+## import HUC10 data
 huc <- st_read("data/spatial/huc10.shp") %>%
   st_transform(4269)
   

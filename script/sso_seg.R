@@ -2,22 +2,29 @@ rm(list=ls())
 
 ##then packages are loaded into the R environment
 library(tidyverse)
+library(tidycensus)
+library(tigris)
+library(tmap)
 library(sf)
-library(ggthemes)
-# library(wellknown)
 
-# census_api_key("") ## Already installed
+# census_api_key("", install = TRUE) ## Census API Key
+yr <- '2015'
 
-yr <- "2016"
+##############################################################
+## data import and prepping
+##############################################################
+
+## import HUC10 data
+huc <- st_read("data/spatial/huc10.shp") %>%
+  st_transform(4269)
 
 ## import segregation/diversity data from 2011-2015 ACS
 seg <- st_read("data/geojson/arc15.geojson") %>%
-  mutate(rd15c = as.factor(rd15c)) %>%
-  st_transform(4326)
+  mutate(rd15c = as.factor(rd15c), i15c = as.factor(i15c)) %>%
+  st_transform(4269)
 
 ## convert sso shapefile to csv for manual cleaning of ESTIMATED column in Excel
 ## only needed to do once
-
 # st_read("data/sso/sso.shp") %>%
 #   st_transform(., 4269) %>%
 #   st_as_sf(., coords = c("lon", "lat"), crs = 4269) %>% 
@@ -30,20 +37,19 @@ sso <- read.csv("data/sso/sso.csv") %>%
   filter(ESTIMATED != "NA", YEAR %in% c(2012, 2013, 2014, 2015, 2016)) %>%
   st_as_sf(., coords = c("X", "Y"), crs = 4269)
 
+## import spatial data for counties as "background" to map
+bkgd <- get_acs(geography = "county", 
+                variables = "B03002_001E",
+                state = c("AL", "GA", "SC"), 
+                year = yr, geometry = TRUE)
+bkgd <- st_zm(bkgd) ## drop "Z" data
+
+## grab roads for cartographic purposes
+rd <- primary_roads(year = yr)
+
 ## sum sso volumes
 # sso.vol <- sso %>%
 #   summarise(sum = sum(ESTIMATED, na.rm = TRUE))
-
-##import HUC10 data
-# nhd <- get_nhd(shp, "arc_nhd") ## didn't work out using "FedData" package
-huc <- st_read("data/spatial/huc10.shp") %>%
-  st_transform(4269)
-
-## import race variables of interest
-race_vars <- c(white = "B03002_003E", black = "B03002_004E", 
-               native_american = "B03002_005E", asian = "B03002_006E", 
-               hawaiian = "B03002_007E", other = "B03002_008E", 
-               multiracial = "B03002_009E", latinx = "B03002_012E")
 
 ## import ACS data for DeKalb
 ## transform ACS census data for joining to spatial data

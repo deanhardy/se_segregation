@@ -142,8 +142,6 @@ dev.off()
 
 #####################################################################
 ## graphing pollution rates by racial percentages at watershed scale
-
-### need to start with se_race and figure out how to calculate the percent of people of color by watershed
 #####################################################################
 
 ## calculate the area of block groups within each watershed
