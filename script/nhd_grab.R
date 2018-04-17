@@ -25,10 +25,10 @@ arc <- counties('GA', 2010) %>%
 
 ## import huc data using FedData package
 ### not working, will download but not unzip and extract
-atl_sp <- as(atl, 'Spatial')
-label = "atl_urban"
-nhd <- get_nhd(atl_sp, label, raw.dir = "./data/nhd",
-               extraction.dir = paste0("./data/nhd/extractions/", label, "/nhd"))
+# atl_sp <- as(atl, 'Spatial')
+# label = "atl_urban"
+# nhd <- get_nhd(atl_sp, label, raw.dir = "./data/nhd",
+#                extraction.dir = paste0("./data/nhd/extractions/", label, "/nhd"))
 
 ## import watershed data based on manual extraction
 nhd1 <- st_read("data/spatial/nhd/nhd0307_huc10.shp") 
@@ -43,9 +43,19 @@ nhd <- rbind(nhd4, nhd3) %>%
 ## returns all watersheds that intersect urban area via indexing
 huc <- nhd[atl,]
 
-tm_shape(huc) + 
-  tm_borders() +
-  tm_shape(atl) + 
+# tm_shape(huc) + 
+#   tm_borders() +
+tm_shape(atl) + 
   tm_polygons() +
-  tm_shape(huc) + 
+tm_shape(arc) +
   tm_borders()
+tm_shape(huc) + 
+  tm_borders(col = "Purple")
+
+
+## calculate area & percent of each huc in ATL urban area
+atl_huc <- as.tibble(st_intersection(atl, huc)) %>%
+  mutate(AreaSqKMinHUC = as.numeric((st_area(int$geometry) / 1e6))) %>% 
+  mutate(Perc_inHUC = (AreaSqKMinHUC/AreaSqKm)) %>%
+  select(Name, AreaSqKMinHUC, Perc_inHUC) %>%
+  st_as_sf()
