@@ -43,19 +43,38 @@ nhd <- rbind(nhd4, nhd3) %>%
 ## returns all watersheds that intersect urban area via indexing
 huc <- nhd[atl,]
 
-# tm_shape(huc) + 
-#   tm_borders() +
-tm_shape(atl) + 
-  tm_polygons() +
-tm_shape(arc) +
-  tm_borders()
-tm_shape(huc) + 
-  tm_borders(col = "Purple")
-
-
 ## calculate area & percent of each huc in ATL urban area
-atl_huc <- as.tibble(st_intersection(atl, huc)) %>%
-  mutate(AreaSqKMinHUC = as.numeric((st_area(int$geometry) / 1e6))) %>% 
-  mutate(Perc_inHUC = (AreaSqKMinHUC/AreaSqKm)) %>%
-  select(Name, AreaSqKMinHUC, Perc_inHUC) %>%
-  st_as_sf()
+int <- as.tibble(st_intersection(atl, huc))
+
+atl_huc <- int %>%
+  mutate(SqKmATLinHUC = as.numeric((st_area(geometry) / 1e6))) %>% 
+  mutate(PercATLinHUC = (SqKmATLinHUC/AreaSqKm)) %>%
+  select(Name, SqKmATLinHUC, PercATLinHUC) %>%
+  left_join(huc, ., by = 'Name')
+
+## plot yea things
+fig <- tm_shape(atl) + 
+  tm_fill('NAME10', palette = 'grey90',
+          title = 'Urban area') +
+  tm_shape(arc) +
+  tm_borders(lwd = 2) +
+  # tm_text('NAME') +
+  tm_shape(filter(atl_huc, PercATLinHUC >= 0.3)) + 
+  tm_borders(col = "red") + 
+  tm_text('Name', size = 0.4, col = "black") + 
+  tm_shape(filter(atl_huc, PercATLinHUC >= 0.5)) + 
+  tm_borders(col = "blue") + 
+  tm_compass(type = "arrow", size = 2, position = c(0.74, 0.1)) +
+  tm_scale_bar(breaks = c(0,20), size = 1, position= c(0.7, 0.0)) +
+  tm_legend(position = c(0.025, 0.05),
+            bg.color = "white",
+            frame = TRUE,
+            legend.text.size = 0.8,
+            legend.title.size = 1)
+#fig
+
+tiff('figures/atl_urban_huc10s.tif', res = 300, compression = 'lzw',
+     height = 5, width = 5, units = 'in')
+fig
+dev.off()
+
