@@ -86,7 +86,7 @@ fig <-
 fig
 
 tiff('figures/atl_urban_huc10s.tif', res = 300, compression = 'lzw',
-     height = 5, width = 5, units = 'in')
+     height = 8, width = 6, units = 'in')
 fig
 dev.off()
 
