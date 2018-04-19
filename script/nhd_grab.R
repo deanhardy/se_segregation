@@ -52,6 +52,8 @@ atl_huc <- int %>%
   select(Name, SqKmATLinHUC, PercATLinHUC) %>%
   left_join(huc, ., by = 'Name')
 
+st_write(atl_huc, "data/data_share/huc10_atlurban", driver = 'GeoJSON')
+
 ## ancillary data for mapping reference
 ## grab roads for cartographic purposes
 rd <- primary_roads(year = 2016)
