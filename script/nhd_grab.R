@@ -52,18 +52,29 @@ atl_huc <- int %>%
   select(Name, SqKmATLinHUC, PercATLinHUC) %>%
   left_join(huc, ., by = 'Name')
 
+## ancillary data for mapping reference
+## grab roads for cartographic purposes
+rd <- primary_roads(year = 2016)
+
 ## plot yea things
-fig <- tm_shape(atl) + 
-  tm_fill('NAME10', palette = 'grey90',
-          title = 'Urban area') +
+fig <-   
+  tm_shape(atl_huc) + 
+    tm_borders(col = "black") + 
+  tm_shape(atl) + 
+    tm_fill('NAME10', palette = 'grey90',
+            title = 'Urban area') +
+  tm_shape(rd) +
+    tm_lines(col = "black") +
+  tm_shape(atl_huc) + 
+    tm_borders(col = "grey50") + 
   tm_shape(arc) +
-  tm_borders(lwd = 2) +
+    tm_borders(lwd = 2) +
   # tm_text('NAME') +
   tm_shape(filter(atl_huc, PercATLinHUC >= 0.3)) + 
-  tm_borders(col = "red") + 
-  tm_text('Name', size = 0.4, col = "black") + 
+    tm_borders(col = "red") + 
+    tm_text('Name', size = 0.4, col = "black") + 
   tm_shape(filter(atl_huc, PercATLinHUC >= 0.5)) + 
-  tm_borders(col = "blue") + 
+    tm_borders(col = "blue") + 
   tm_compass(type = "arrow", size = 2, position = c(0.74, 0.1)) +
   tm_scale_bar(breaks = c(0,20), size = 1, position= c(0.7, 0.0)) +
   tm_legend(position = c(0.025, 0.05),
@@ -71,7 +82,8 @@ fig <- tm_shape(atl) +
             frame = TRUE,
             legend.text.size = 0.8,
             legend.title.size = 1)
-#fig
+
+fig
 
 tiff('figures/atl_urban_huc10s.tif', res = 300, compression = 'lzw',
      height = 5, width = 5, units = 'in')
