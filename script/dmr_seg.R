@@ -220,6 +220,7 @@ int <- int %>%
   mutate(AreaSqKmHUC = as.numeric((st_area(int$geometry) / 1e6))) %>%
   mutate(percBGinHUC = AreaSqKmHUC/(aland+awater)*1e6)
 
+int$AreaSqKmHUC
 ## Want the percent of each watershed that has low diversity with majority people of color
 ## will plot that against volume dmr per year per area
 se_seg <- int %>%
@@ -234,7 +235,7 @@ dmr_sum <- dmr %>%
   summarise(dmr_load = sum(dmr_area))
 
 se_seg_dmr <- merge(se_seg, dmr_sum, by = "Name")
-  
+
 # library(RColorBrewer)
 # n <- 19
 # qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
