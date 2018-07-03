@@ -1,0 +1,165 @@
+--------------------------------------------------------------------------------
+Codebook for NHGIS data file 'nhgis0037_ds120_1990_blck_grp'
+--------------------------------------------------------------------------------
+ 
+Contents
+    - Data Summary
+    - Data Dictionary
+    - Citation and Use
+ 
+Additional documentation on NHGIS data sources is available at: 
+    https://www.nhgis.org/documentation/tabular-data 
+ 
+--------------------------------------------------------------------------------
+Data Summary
+--------------------------------------------------------------------------------
+ 
+Year:             1990
+Geographic level: Block Group (by State--County--Census Tract)
+Extent:           Georgia
+Dataset:          1990 Census: STF 1 - 100% Data
+   NHGIS code:    1990_STF1
+   NHGIS ID:      ds120
+Breakdown(s):     Geographic Subarea:
+                     Total area (00)
+ 
+Tables:
+ 
+1. Hispanic Origin by Race
+   Universe:    Persons
+   Source code: NP10
+   NHGIS code:  ET2
+ 
+2. Occupancy Status
+   Universe:    Housing units
+   Source code: NH2
+   NHGIS code:  ESN
+ 
+3. Tenure
+   Universe:    Occupied housing units
+   Source code: NH3
+   NHGIS code:  ES1
+ 
+4. Vacancy Status
+   Universe:    Vacant housing units
+   Source code: NH5
+   NHGIS code:  ETQ
+ 
+--------------------------------------------------------------------------------
+Data Dictionary
+--------------------------------------------------------------------------------
+ 
+Context Fields 
+        GISJOIN:     GIS Join Match Code
+        YEAR:        Data File Year
+        ANRCA:       Alaska Native Regional Corporation Code
+        RES_ONLYA:   American Indian Reservation [excluding trust lands] Code
+        TRUSTA:      American Indian Reservation [trust lands only] Code
+        AIANHHA:     American Indian Area/Alaska Native Area/Hawaiian Home Land Code
+        RES_TRSTA:   Reservation/Trust Lands Code
+        BLOCKA:      Block Code
+        BLCK_GRPA:   Block Group Code
+        TRACTA:      Census Tract Code
+        CDA:         Congressional District (101st) Code
+        C_CITYA:     Consolidated City Code
+        COUNTY:      County Name
+        COUNTYA:     County Code
+        CTY_SUBA:    County Subdivision Code
+        DIVISIONA:   Division Code
+        MSA_CMSAA:   Metropolitan Statistical Area/Consolidated Metropolitan Statistical Area Code
+        PLACEA:      Place Code
+        PMSAA:       Primary Metropolitan Statistical Area Code
+        REGIONA:     Region Code
+        STATE:       State Name
+        STATEA:      State Code
+        URBRURALA:   Urban/Rural Code
+        URB_AREAA:   Urban Area Code
+        CD103A:      Congressional District (103rd) Code
+        ANPSADPI:    Area Name/PSAD Term/Part Indicator
+ 
+Breakdown:
+    Geographic Subarea: Total area (00)
+ 
+    Table 1:     Hispanic Origin by Race
+    Universe:    Persons
+    Source code: NP10
+    NHGIS code:  ET2
+        ET2001:      Not of Hispanic origin >> White
+        ET2002:      Not of Hispanic origin >> Black
+        ET2003:      Not of Hispanic origin >> American Indian, Eskimo, or Aleut
+        ET2004:      Not of Hispanic origin >> Asian or Pacific Islander
+        ET2005:      Not of Hispanic origin >> Other race
+        ET2006:      Hispanic origin >> White
+        ET2007:      Hispanic origin >> Black
+        ET2008:      Hispanic origin >> American Indian, Eskimo, or Aleut
+        ET2009:      Hispanic origin >> Asian or Pacific Islander
+        ET2010:      Hispanic origin >> Other race
+ 
+    Table 2:     Occupancy Status
+    Universe:    Housing units
+    Source code: NH2
+    NHGIS code:  ESN
+        ESN001:      Occupied
+        ESN002:      Vacant
+ 
+    Table 3:     Tenure
+    Universe:    Occupied housing units
+    Source code: NH3
+    NHGIS code:  ES1
+        ES1001:      Owner occupied
+        ES1002:      Renter occupied
+ 
+    Table 4:     Vacancy Status
+    Universe:    Vacant housing units
+    Source code: NH5
+    NHGIS code:  ETQ
+        ETQ001:      For rent
+        ETQ002:      For sale only
+        ETQ003:      Rented or sold, not occupied
+        ETQ004:      For seasonal, recreational, or occasional use
+        ETQ005:      For migrant workers
+        ETQ006:      Other vacant
+ 
+--------------------------------------------------------------------------------
+Citation and Use of NHGIS Data
+--------------------------------------------------------------------------------
+ 
+All persons are granted a limited license to use this documentation and the
+accompanying data, subject to the following conditions:
+
+* Publications and research reports employing NHGIS data (either tabular or GIS)
+  must cite it appropriately. The citation should include the following:
+
+    Minnesota Population Center. National Historical Geographic Information
+    System: Version 11.0 [Database]. Minneapolis: University of Minnesota. 2016.
+    http://doi.org/10.18128/D050.V11.0.
+
+* Publications and research reports employing school attendance areas data
+  (either tabular or GIS) must cite it appropriately. The citation should
+  include the following:
+
+    The College of William and Mary and the Minnesota Population Center.
+    School Attendance Boundary Information System (SABINS): Version 1.0.
+    Minneapolis, MN: University of Minnesota 2011.
+
+* If possible, citations should also include the URL for the NHGIS site:
+
+    https://www.nhgis.org/
+
+* If possible, citations involving school attendance areas should also include
+  the URL for the SABINS site:
+
+    http://www.sabinsdata.org/
+
+In addition, we request that users send us a copy of any publications, research
+reports, or educational material making use of the data or documentation.
+Printed matter should be sent to:
+
+    NHGIS
+    Minnesota Population Center
+    University of Minnesota
+    50 Willey Hall
+    225 19th Ave S
+    Minneapolis, MN 55455
+
+Send electronic material to: nhgis@umn.edu

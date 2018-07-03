@@ -15,6 +15,13 @@ atl <-urban_areas('2010') %>%
                +lon_0=-84 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 
                +units=m +no_defs")
 
+tm_shape(atl) +
+  tm_polygons(col = 'grey80') +
+  tm_shape(rd) +
+  tm_lines(col = 'black')
+
+tmap_mode("plot")
+
 ## define region for census import
 cnty <- c("Cherokee", "Clayton","Cobb", "DeKalb", "Douglas", 
           "Fayette", "Fulton", "Gwinnett", "Henry", "Rockdale")
