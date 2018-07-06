@@ -28,8 +28,6 @@ dec_vars <- c(total = "P0050001",
               twomore = "P0050009", latinx = "P0040003"
               )
 
-# repeat above. Block Groups to huc10
-
 # vector of Atlanta HUC counties
 cnty <- c("Baldwin","Banks","Barrow","Bartow","Butts","Carroll","Cherokee","Clarke",
           "Clayton","Cobb", "Coweta", "Dawson", "DeKalb", "Douglas","Fann",
@@ -83,7 +81,6 @@ rm(nhd1,nhd2,nhd3,nhd4)
 ## returns all watersheds that intersect urban area via indexing
 huc10 <- nhd[atl,]
 
-###############################################
 ## calculate area & percent of each BG in each HUC to set up
 ## proportional allocation method
 
@@ -172,7 +169,7 @@ lbl3 <- c("White (Low)","White (Mod)","Black (Mod)","High Diversity")
 
 rd <- primary_roads(year = 2016)
 
-# here is where I need to make new map
+# new map
 huc10 <- 
   tm_shape(huc10_bg10) +
   tm_fill('class10', legend.show = FALSE, palette = race_mm_col3)+
@@ -194,5 +191,8 @@ huc10
 
 #bg_class10_huc10$class10
 
+write_sf(huc10_bg10, "data/geojson/huc10_bg10.geojson")
+
+st_write(huc10_bg10, "data/geojson/huc10_bg10b.geojson")
 
 

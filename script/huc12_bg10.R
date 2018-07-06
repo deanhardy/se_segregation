@@ -213,3 +213,5 @@ rdkb2 <- huc1210 + scale_fill_manual(values = race_mm_col,
                                      name = "race, diversity",
                                      labels = lbl2)
 rdkb2
+
+#write_sf(huc12_bg10, "data/geojson/huc12_bg10.geojson")
