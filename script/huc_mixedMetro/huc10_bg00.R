@@ -1,7 +1,6 @@
 ##############################################################################
-# mixed metro data for HUC 12s - 2000
+# mixed metro data for HUC 10s and HUC 12s - 2000
 # created: May 5, 2018
-# Last updated: July 3, 2018
 # Author: Taylor Hafley
 # git: deanhardy/se_segregation
 # local location: Dropbox/school/Projects/inProgress/watershed/se_segregation/
@@ -16,18 +15,18 @@ options(tigris_class = "sf")
 library(sf)
 library(tmap)
 library(tmaptools)
-
+#library(lwgeom)
 
 # race data from decennial census needed for Mixed Metro classifications
 # [note: latinx, 'P0040003', = total - nonlatinx] #tested and confirmed
 # six racial groups: White, Black, American Indian, Asian or Pacific Islanders, 
 #                           Some other race & two or more races, Latinx
 dec_vars00sf3 <- c(total = "P007001",
-                   nonlatinx = "P007002",
-                   white = "P007003", black = "P007004",
-                   native_american = "P007005", asian = "P007006",
-                   hawaiian = "P007007", other = "P007008",
-                   twomore = "P007009", latinx = "P007010")
+                nonlatinx = "P007002",
+                white = "P007003", black = "P007004",
+                native_american = "P007005", asian = "P007006",
+                hawaiian = "P007007", other = "P007008",
+                twomore = "P007009", latinx = "P007010")
 
 # vector of Atlanta HUC counties (need county in call for block group data
 # using tidycensus (get_decennial/acs))
@@ -41,12 +40,26 @@ cnty <- c("Baldwin","Banks","Barrow","Bartow","Butts","Carroll","Cherokee","Clar
 
 # import 2000 race data using tidycensus
 gabg00 <- get_decennial(geography = "block group", variables = dec_vars00sf3, 
-                        state = "GA", county = cnty, year = 2000,
-                        output = 'wide',
-                        geometry = TRUE) %>%
+                      state = "GA", county = cnty, year = 2000,
+                      output = 'wide',
+                      geometry = TRUE) %>%
   mutate(SqKM_BG = as.numeric(st_area(geometry)) / 1e6) %>%
   mutate(ahpi = asian + hawaiian,
          oth2 = other + twomore)
+
+# test accuracy of count data
+gabg00 %>%
+  mutate(tot1 = (latinx + nonlatinx) - total,
+         tot2 = (white + black + native_american + ahpi + oth2 + latinx ) - total) %>%
+  select(total, latinx,nonlatinx, tot2, tot1, GEOID) %>%
+  arrange(desc(tot2))
+
+gabg00 %>%
+  group_by(GEOID) %>%
+  summarize(checktotal = 1,
+          checktotal = ((white + black + native_american + ahpi + oth2 + latinx) - total)) %>%
+  arrange(desc(checktotal))
+
 
 # Atlanta urban area
 atl <-urban_areas('2010') %>%
@@ -70,29 +83,6 @@ rm(nhd1,nhd2,nhd3,nhd4)
 ## returns all watersheds that intersect urban area via indexing
 huc10 <- nhd[atl,]
 
-#########################################
-#  BGs to HUC 12s
-#########################################
-
-## HUC12s processing
-
-
-## import watershed data based on manual extraction
-nhd1 <- st_read("data/spatial/nhd/nhd0307_huc12.shp") 
-nhd2 <- st_read("data/spatial/nhd/nhd0313_huc12.shp")
-nhd3 <- st_read("data/spatial/nhd/nhd0315_huc12.shp")
-nhd4 <- rbind(nhd1, nhd2)
-nhd <- rbind(nhd4, nhd3) %>%
-  st_transform(crs = "+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=23 
-               +lon_0=-84 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 
-               +units=m +no_defs")
-
-rm(nhd1, nhd2, nhd3, nhd4)
-## returns all watersheds contained by huc10s
-huc12 <- st_join(huc10, nhd, join = st_contains)
-huc12 <- nhd %>%
-  filter(HUC12 %in% huc12$HUC12)
-
 ## calculate area & percent of each BG in each HUC to set up
 ## proportional allocation method 
 
@@ -102,17 +92,17 @@ gabg00 <- gabg00 %>%
                +units=m +no_defs")
 
 # returns all block groups  that intersect urban huc10s (via indexing)
-huc12_bg00 <- gabg00[huc12,]
+huc10_bg00 <- gabg00[huc10,]
 
 # identify sub-geographies that intersect watershed boundary
-int3 <- st_intersection(huc12_bg00, huc12)
+int2 <- st_intersection(huc10_bg00, huc10)
 
-huc12_bg00 <- int3 %>%
+huc10_bg00 <- int2 %>%
   mutate(BG_SqKmHuc = round(as.numeric((st_area(geometry) / 1e6)),4)) %>%
   mutate(pct_BGinHUC = round(BG_SqKmHuc/SqKM_BG,4))
 
-huc12_bg00 <- huc12_bg00 %>%
-  group_by(HUC12) %>%
+huc10_bg00 <- huc10_bg00 %>%
+  group_by(HUC10) %>%
   summarise(total = sum(total*pct_BGinHUC),
             white = sum(white*pct_BGinHUC),
             black = sum(black*pct_BGinHUC),
@@ -127,34 +117,34 @@ huc12_bg00 <- huc12_bg00 %>%
             othpct00 = round((oth2/total), 4),
             ltxpct00 = round((latinx/total), 4))
 
-huc12_bg00 %>%
-  group_by(HUC12) %>%
-  summarize(checktotal = 1,
+huc10_bg00 %>%
+  group_by(HUC10) %>%
+    summarize(checktotal = 1,
             checktotal = sum(white + black + native_american + ahpi + oth2 + latinx) - total) %>%
-  arrange((checktotal))
+  arrange(desc(checktotal))
 
 # verify that percentages == 1.
-huc12_bg00 %>%
+huc10_bg00 %>%
   mutate(one = whtpct00 + blkpct00 + napct00 + ahpipct00 + othpct00 + ltxpct00) %>%
-  select(HUC12, total, one) %>%
+  select(HUC10, total, one) %>%
   arrange(one)
 
-huc12_bg00 %>%
+huc10_bg00 %>%
   mutate(one = whtpct00+blkpct00+napct00+ahpipct00+othpct00+ltxpct00) %>%
-  select(HUC12, total, one) %>%
+  select(HUC10, total, one) %>%
   arrange(desc(one))
 
-##    2000 BG -- HUC 12 entropy calculation
+###########
+# 2000 BG entropy calculation
 
-huc12_bg00 <- huc12_bg00 %>%
+huc10_bg00 <- huc10_bg00 %>%
   mutate(E = -((whtpct00*log(whtpct00)+blkpct00*log(blkpct00) + napct00*log(napct00) +
                   ahpipct00*log(ahpipct00) + othpct00*log(othpct00) +
                   ltxpct00*log(ltxpct00)))/log(6))
 
 
-# assign 'classes' for segregation X diversity
-
-huc12_bg00 <- huc12_bg00 %>%
+## assign 'classes' for segregation X diversity
+huc10_bg00 <- huc10_bg00 %>%
   mutate(class00 = 1,
          class00 = replace(class00, E <= .3707 & whtpct00 > .65 | whtpct00 >=.8, 2),
          class00 = replace(class00, E <= .3707 & blkpct00 > .65 | blkpct00 >= .8, 3),
@@ -169,25 +159,24 @@ huc12_bg00 <- huc12_bg00 %>%
          class00 = replace(class00, E <= .3707 & othpct00 > .65 | othpct00 >= .8, 4),
          class00 = replace(class00, E <= .3707 & napct00 > .65 | napct00 >= .8, 5))
 
-huc12_bg00$class00 <- huc12_bg00$class00 %>% as.factor()
+huc10_bg00$class00 <- huc10_bg00$class00 %>% as.factor()
 
-tm_shape(huc12_bg00) +
+tm_shape(huc10_bg00) +
   tm_polygons('class00')
 
-## map RACE diversity/segregation by HUC 12 
+
 
 ## create custom palette with custom legend labels for seg indices
-race_mm_col <- c("#ff9900","#66cc00","#ffcc99", "#99ff99","#99752e")
-leg_col2 <- c("#ff9900","#66cc00","#ffcc99", "#99ff99","#99752e")
-lbl2 <- c("White (Low)","Black (Low)","White (Mod)",
-          "Black (Mod)","High Diversity")
-rd <- primary_roads(year = 2016)
+race_mm_col3 <- c("#ff9900", "#ffcc99", "#99ff99")
+leg_col3 <- c("#ff9900","#ffcc99", "#99ff99")
+lbl3 <- c("White (Low)","White (Mod)","Black (Mod)")
 
-huc12 <- 
-  tm_shape(huc12_bg00) +
-  tm_fill('class00', legend.show = FALSE, palette = race_mm_col)+
-  tm_add_legend(type = c("fill"), labels = lbl2, col = leg_col2, 
-                title = "2000 seg & diversity\nby HUC12 Watershed") +
+# new map
+huc10 <- 
+  tm_shape(huc10_bg00) +
+  tm_fill('class00', legend.show = FALSE, palette = race_mm_col3)+
+  tm_add_legend(type = c("fill"), labels = lbl3, col = leg_col3, 
+                title = "2000 seg & diversity\nby HUC10 Watershed") +
   tm_shape(rd) + 
   tm_lines(col = "black") +
   tm_compass(type = "arrow", size = 4, position = c(0.82, 0.08)) +
@@ -200,23 +189,9 @@ huc12 <-
   tm_layout(frame = FALSE, 
             outer.margins=c(0,0,0,0), 
             inner.margins=c(0,0,0,0), asp=0)
-huc12
+huc10
 
-tapply(huc12_bg00$class00, huc12_bg00$class00, length)
+tapply(huc10_bg00$class00, huc10_bg00$class00, length)
 
-huc1200 <- ggplot(data = huc12_bg00) +
-  geom_bar(mapping = aes(x = class00, fill = class00
-  )) +
-  ggtitle("2000 segregtion & diversity\nby huc12 watershed") +
-  theme(plot.title = element_text(hjust = 0.5)) +
-  labs(
-    x = "segregation and diversity",
-    y = 'Total Number of huc12s') 
-
-rdkb2 <- huc1200 + scale_fill_manual(values = race_mm_col,
-                                     limits = c("2","3","8","9","14"),
-                                     name = "race, diversity",
-                                     labels = lbl2)
-rdkb2
-
-#write_sf(huc12_bg00, "data/geojson/huc12_bg00.geojson")
+#write_sf(huc10_bg00, "data/geojson/huc10_bg00.geojson")
+st_write(huc10_bg00, dsn = "data/shp/huc10_00", layer = "huc10_bg00", driver = "ESRI Shapefile")

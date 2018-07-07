@@ -215,3 +215,6 @@ rdkb2 <- huc1210 + scale_fill_manual(values = race_mm_col,
 rdkb2
 
 #write_sf(huc12_bg10, "data/geojson/huc12_bg10.geojson")
+
+#st_write(huc12_bg10, dsn = "data/shp/huc12b", layer = "huc12_bg10", driver = "ESRI Shapefile")
+
