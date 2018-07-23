@@ -14,7 +14,7 @@ library(sf)
 ##############################################################
 
 ## define year for census data import
-yr <- '2015'
+yr <- 2015
 
 ## import watershed data
 ## note that PERCENTAGE in 'huc' object equals that in ARC (from ArcGIS)
