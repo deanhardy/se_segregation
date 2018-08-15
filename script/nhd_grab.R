@@ -15,6 +15,10 @@ atl <-urban_areas('2010') %>%
                +lon_0=-84 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 
                +units=m +no_defs")
 
+## ancillary data for mapping reference
+## grab roads for cartographic purposes
+rd <- primary_roads(year = 2016)
+
 tm_shape(atl) +
   tm_polygons(col = 'grey80') +
   tm_shape(rd) +
@@ -60,10 +64,6 @@ atl_huc10 <- int %>%
   left_join(huc10, ., by = 'Name')
 
 #st_write(atl_huc10, "data/data_share/huc10_atlurban", driver = 'GeoJSON')
-
-## ancillary data for mapping reference
-## grab roads for cartographic purposes
-rd <- primary_roads(year = 2016)
 
 ## plot yea things
 fig <-   
@@ -163,3 +163,35 @@ tiff('figures/atl_urban_huc12s.tif', res = 300, compression = 'lzw',
      height = 8, width = 6, units = 'in')
 fig12
 dev.off()
+
+
+
+#################################################################
+## "HUC14" processing; source of data is NHDPlus HR "catchments"
+#################################################################
+
+## import watershed data based on manual extraction
+nhd1 <- st_read("data/spatial/nhd/nhd0307_huc14.shp") 
+nhd2 <- st_read("data/spatial/nhd/nhd0313_huc14.shp")
+nhd3 <- st_read("data/spatial/nhd/nhd0315_huc14.shp")
+nhd4 <- rbind(nhd1, nhd2)
+nhd <- rbind(nhd4, nhd3) %>%
+  st_transform(crs = "+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=23 
+               +lon_0=-84 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 
+               +units=m +no_defs")
+
+## returns all watersheds contained by huc10s
+huc14 <- st_join(huc10, nhd, join = st_contains)
+huc14 <- nhd %>%
+  filter(HUC14 %in% huc14$HUC14)
+
+## calculate area & percent of each huc in ATL urban area
+int <- as.tibble(st_intersection(atl, huc14))
+
+atl_huc14 <- int %>%
+  mutate(SqKmATLinHUC = as.numeric((st_area(geometry) / 1e6))) %>% 
+  mutate(PercATLinHUC = (SqKmATLinHUC/AreaSqKm)) %>%
+  select(Name, SqKmATLinHUC, PercATLinHUC) %>%
+  left_join(huc14, ., by = 'Name')
+
+st_write(atl_huc14, "data/data_share/huc14_atlurban", driver = 'GeoJSON', delete_dsn = TRUE)
