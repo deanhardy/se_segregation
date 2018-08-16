@@ -125,9 +125,10 @@ atl_huc12 <- int %>%
   mutate(SqKmATLinHUC = as.numeric((st_area(geometry) / 1e6))) %>% 
   mutate(PercATLinHUC = (SqKmATLinHUC/AreaSqKm)) %>%
   select(Name, SqKmATLinHUC, PercATLinHUC) %>%
-  left_join(huc12, ., by = 'Name')
+  left_join(huc12, ., by = 'Name') %>%
+  st_transform(4269)
 
-st_write(atl_huc12, "data/data_share/huc12_atlurban", driver = 'GeoJSON', delete_dsn = TRUE)
+st_write(atl_huc12, "data/data_share/huc12_atlurban", driver = 'GeoJSON')
 
 ## plot yea things
 fig12 <-   
