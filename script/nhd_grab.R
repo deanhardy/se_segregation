@@ -100,7 +100,7 @@ dev.off()
 
 
 #####################
-## HUC12s processing
+## HUC12 processing
 #####################
 
 ## import watershed data based on manual extraction
@@ -182,8 +182,6 @@ nhd <- rbind(nhd4, nhd3) %>%
 
 ## returns all watersheds contained by huc10s
 huc14 <- st_join(huc10, nhd, join = st_contains)
-huc14 <- nhd %>%
-  filter(HUC14 %in% huc14$HUC14)
 
 ## calculate area & percent of each huc in ATL urban area
 int <- as.tibble(st_intersection(atl, huc14))
