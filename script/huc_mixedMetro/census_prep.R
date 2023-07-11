@@ -170,8 +170,8 @@ tm_shape(atl) +
 ## export data ##
 gabg <- rbind(gabg90, gabg00, gabg10, gabg20)
 
-st_write(gabg, 'data/spatial/census/census_allyears.GEOJSON', driver = 'GEOJSON', append = FALSE)
-st_write(gabg90, 'data/spatial/census/census1990.GEOJSON', driver = 'GEOJSON', append = FALSE)
-st_write(gabg00, 'data/spatial/census/census2000.GEOJSON', driver = 'GEOJSON', append = FALSE)
-st_write(gabg10, 'data/spatial/census/census2010.GEOJSON', driver = 'GEOJSON', append = FALSE)
-st_write(gabg20, 'data/spatial/census/census2020.GEOJSON', driver = 'GEOJSON', append = FALSE)
+st_write(gabg, 'data/spatial/census_allyears.GEOJSON', driver = 'GEOJSON', append = FALSE)
+st_write(gabg90, 'data/spatial/census1990.GEOJSON', driver = 'GEOJSON', append = FALSE)
+st_write(gabg00, 'data/spatial/census2000.GEOJSON', driver = 'GEOJSON', append = FALSE)
+st_write(gabg10, 'data/spatial/census2010.GEOJSON', driver = 'GEOJSON', append = FALSE)
+st_write(gabg20, 'data/spatial/census2020.GEOJSON', driver = 'GEOJSON', append = FALSE)
