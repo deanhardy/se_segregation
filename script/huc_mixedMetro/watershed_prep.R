@@ -17,43 +17,10 @@ library(sf)
 library(tmap)
 library(tmaptools)
 
-# race data from decennial census needed for Mixed Metro classifications
-# six racial groups: White, Black, American Indian, Asian or Pacific Islanders, 
-#                           Some other race & two or more races, Latinx
-# [note: latinx, 'P0040003', = total - nonlatinx]
-dec20_vars <- c(total = "P2_001N",
-                latinx = "P2_002N",
-              nonlatinx = "P2_003N",
-              white = "P2_005N", black = "P2_006N",
-              native_american = "P2_007N", asian = "P2_008N",
-              hawaiian = "P2_009N", other = "P2_010N",
-              twomore = "P2_011N"
-)
-
-## check variables
-v20 <- load_variables(2020, "pl", cache = TRUE)
-
-# vector of Atlanta HUC counties
-cnty <- c("Baldwin","Banks","Barrow","Bartow","Butts","Carroll","Cherokee","Clarke",
-          "Clayton","Cobb", "Coweta", "Dawson", "DeKalb", "Douglas","Fann",
-          "Fayette","Floyd","Forsyth", "Fulton","Gordon","Gwinnett","Habersham",
-          "Hall","Haralson","Heard", "Henry","Jackson","Jasper","Jones","Lamar",
-          "Lincoln","Lumpkin","Meriwether","Monroe","Morgan","Newton",
-          "Paulding","Pickens","Pike","Putnam","Polk","Rabun",
-          "Rockdale","Spalding","Towns","Union","Upson","Walton","White")
-
-# import race data using tidycensus
-gaBG <- get_decennial(geography = "block group", variables = dec20_vars, 
-                      state = "GA", county = cnty, year = 2020,
-                      output = 'wide',
-                      geometry = TRUE) %>%
-  mutate(SqKM_BG = as.numeric(st_area(geometry)) / 1e6) %>%
-  mutate(ahpi = asian + hawaiian,
-         oth2 = other + twomore)
-
 
 #########################################
-#  BGs to HUC 12s
+##  BGs to HUC 12s ##
+#########################################
 
 # Atlanta urban area
 atl <-urban_areas(year = '2020') %>%
