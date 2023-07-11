@@ -18,7 +18,7 @@ bind_rows(huc10_10, huc10_00)
 
 vignette("tibble")
 huc10 %>%
-  filter(YEAR ==)) +
+  filter(YEAR ==) +
   tm_shape(huc10) +
   tm_polygons("class00")
 
