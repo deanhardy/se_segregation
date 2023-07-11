@@ -6,7 +6,7 @@
 # git: deanhardy/se_segregation
 # local location: Dropbox/school/Projects/inProgress/watershed/se_segregation/
 ##############################################################################
-
+rm(list=ls())
 # load necessary libraries
 library(tidyverse)
 library(tidycensus)
@@ -60,7 +60,7 @@ gabg90 <- left_join(ga_sp, gabg90)
 
 
 # Atlanta urban area
-atl <-urban_areas('2010') %>%
+atl <-urban_areas('2020') %>%
   filter(NAME10 == 'Atlanta, GA') %>%
   st_transform(crs = "+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=23 
                +lon_0=-84 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 
@@ -207,7 +207,7 @@ tm_shape(huc12) +
 huc1090 <- ggplot(data = huc10_bg90) +
   geom_bar(mapping = aes(x = class90, fill = class90
   )) +
-  ggtitle("1990 segregtion & diversity\nby huc10 watershed") +
+  ggtitle("1990 segregation & diversity\nby huc10 watershed") +
   theme(plot.title = element_text(hjust = 0.5)) +
   labs(
     x = "segregation and diversity",
