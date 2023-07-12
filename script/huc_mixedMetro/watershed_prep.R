@@ -71,13 +71,13 @@ rm(nhd)
 
 ## import create 
 swra <- st_read("data/spatial/srwa_watersheds.shp") %>%
-  mutate(Name = 'SWRA', HUC_NO = 'NA', category = 'local') %>%
+  mutate(Name = 'SWRA', HUC_NO = 'SWRA', category = 'local') %>%
   select(Name, category, HUC_NO, geometry)
 wawa <- st_read("data/spatial/wawa_watersheds.shp") %>%
-  mutate(Name = 'SWRA', HUC_NO = 'NA', category = 'local') %>%
+  mutate(Name = 'WAWA', HUC_NO = 'WAWA', category = 'local') %>%
   select(Name, category, HUC_NO, geometry)
 uflint <- filter(huc10, HUC_NO == '0313000501') %>%
-  mutate(Name = 'Upper Flint', category = 'local') %>%
+  mutate(Name = 'Upper Flint', category = 'local', HUC_NO = 'uFlint') %>%
   select(Name, category, HUC_NO, geometry)
 
 df <- rbind(huc10, huc12, swra, wawa, uflint)
