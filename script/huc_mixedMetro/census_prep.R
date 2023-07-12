@@ -67,6 +67,10 @@ gabg90 <- left_join(ga_sp, gabg90) %>%
 
 rm(ga_sp)
 
+## change geometry from multi to single polygon and make valid
+gabg90 <- st_cast(gabg90, 'POLYGON')
+gabg90 <- st_make_valid(gabg90)
+
 ###################################
 #### 2000 decennial data prep ####
 ###################################

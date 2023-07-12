@@ -43,7 +43,7 @@ rm(nhd1,nhd2,nhd3,nhd4)
 ## returns all watersheds that intersect urban area via indexing
 huc10 <- nhd[atl,]
 huc10 <-  huc10 %>%
-  mutate(category = 'huc12') %>%
+  mutate(category = 'huc10') %>%
   select(Name, category, HUC10) %>%
   rename(HUC_NO = HUC10)
 
@@ -71,15 +71,15 @@ rm(nhd)
 
 ## import create 
 swra <- st_read("data/spatial/srwa_watersheds.shp") %>%
-  mutate(Name = 'SWRA', HUC_NO = 'NA', category = 'swra') %>%
+  mutate(Name = 'SWRA', HUC_NO = 'NA', category = 'local') %>%
   select(Name, category, HUC_NO, geometry)
 wawa <- st_read("data/spatial/wawa_watersheds.shp") %>%
-  mutate(Name = 'SWRA', HUC_NO = 'NA', category = 'wawa') %>%
+  mutate(Name = 'SWRA', HUC_NO = 'NA', category = 'local') %>%
   select(Name, category, HUC_NO, geometry)
 uflint <- filter(huc10, HUC_NO == '0313000501') %>%
-  mutate(Name = 'Upper Flint', category = 'uflint') %>%
+  mutate(Name = 'Upper Flint', category = 'local') %>%
   select(Name, category, HUC_NO, geometry)
 
 df <- rbind(huc10, huc12, swra, wawa, uflint)
 
-st_write(df, 'data/spatial/watersheds.GEOJSON', driver = 'GEOJSON')
+st_write(df, 'data/spatial/watersheds.GEOJSON', driver = 'GEOJSON', append = FALSE)
