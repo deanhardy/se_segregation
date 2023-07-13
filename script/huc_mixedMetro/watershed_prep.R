@@ -76,9 +76,15 @@ swra <- st_read("data/spatial/srwa_watersheds.shp") %>%
 wawa <- st_read("data/spatial/wawa_watersheds.shp") %>%
   mutate(Name = 'WAWA', HUC_NO = 'WAWA', category = 'local') %>%
   select(Name, category, HUC_NO, geometry)
-uflint <- filter(huc10, HUC_NO == '0313000501') %>%
+# uflint <- filter(huc10, HUC_NO == '0313000501') %>%
+#   mutate(Name = 'Upper Flint', category = 'local', HUC_NO = 'uFlint') %>%
+#   select(Name, category, HUC_NO, geometry)
+uflint <- filter(huc12, HUC_NO %in% c('031300050103', '031300050101', '031300050102', '031300050104')) %>%
+  st_union() %>%
+  st_as_sf() %>%
   mutate(Name = 'Upper Flint', category = 'local', HUC_NO = 'uFlint') %>%
-  select(Name, category, HUC_NO, geometry)
+  rename(geometry = x) %>%
+  select(Name, category, HUC_NO)
 
 df <- rbind(huc10, huc12, swra, wawa, uflint)
 
