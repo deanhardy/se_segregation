@@ -102,16 +102,16 @@ fig <- ggplot(filter(shd_bg, HUC_NO %in% c('WAWA', 'SWRA', 'uFlint'))) +
   geom_point(aes(year, (1-whtpct)*100, color = HUC_NO)) + 
   geom_line(aes(year, blkpct*100, color = HUC_NO), lty = 'dashed') + 
   geom_point(aes(year, blkpct*100, color = HUC_NO)) + 
-  scale_y_continuous(name = 'Nonwhite Population (%)', limits = c(0,100), expand = c(0,0), breaks = seq(0,100,10)) +
+  scale_y_continuous(name = 'Nonwhite (solid) & Black (dashed) Population (%)', limits = c(0,100), expand = c(0,0), breaks = seq(0,100,10)) +
   scale_x_continuous(name = 'Year') +
   labs(color = 'Watershed')+
-  theme(text = element_text(size = 15),
+  theme(text = element_text(size = 10),
         panel.background = element_rect(fill = 'white', colour = 'black'),
         panel.grid.major.y = element_line(colour = 'grey'),
         panel.grid.major.x = element_line(colour = 'grey', linetype = 'dotted'))
 fig
 
-png('figures/localsheds-pNonwhite.png', units = 'in', height = '4', width = '6', res = 150)
+png('figures/localsheds-pNonwhite+pBlack.png', units = 'in', height = '4', width = '6', res = 150)
 fig
 dev.off()
 
@@ -122,11 +122,12 @@ class_smry <- shd_bg %>%
   summarise(total = sum(total), black = sum(black), white = sum(white), n = n())
 write.csv(st_drop_geometry(class_smry), 'results-tables/class_smry.csv')
 
-blk_smry <- class_smry %>%
-  filter(class10 %in% c(3,9), shed == 'huc12') %>%
-  group_by(year, class10) %>%
-  summarise(total = sum(total), black = sum(black), n = sum(n))
-write.csv(st_drop_geometry(blk_smry), 'results-tables/blk_smry.csv')
+blk_smry <- shd_bg %>%
+  filter(class10 %in% c(3,9), shed %in% c('huc12', 'local')) %>%
+  group_by(shed, year, class10) %>%
+  summarise(total = sum(total), black = sum(black), nonwhite = sum(total) - sum(white), n = n()) %>%
+  mutate(pBlack = (black/total) * 100, pNonwhite = (nonwhite/total) * 100)
+write.csv(st_drop_geometry(blk_smry), 'results-tables/summary_reults_blackonly.csv')
 
 ## create custom palette with custom legend labels for seg indices
 # race_mm_col <- c("#ff9900","#66cc00","#ffcc99", "#99ff99", "#cc99ff","#99752e")
@@ -151,8 +152,8 @@ linegraph <- ggplot(filter(class_smry, shed == 'huc12')) +
   # ggtitle(paste("Segregation & Diversity\nby HUC12 Watershed")) +
   labs(
     x = "Year",
-    y = 'Watersheds (No. HUC12)') + 
-  theme(text = element_text(size = 15),
+    y = 'Number of Watersheds (HUC12)') + 
+  theme(text = element_text(size = 10),
         plot.title = element_text(hjust = 0.5),
         panel.background = element_rect(fill = 'white', colour = 'black'),
         panel.grid.major.y = element_line(colour = 'grey'),
@@ -166,7 +167,7 @@ rdkb2 <- linegraph + scale_color_manual(values = leg_col2,
 rdkb2
 
 ## export summary by class
-png('figures/huc12-seg-div.png', units = 'in', height = '2', width = '3.25', res = 150)
+png('figures/huc12-mixedmetro-1990-2020.png', units = 'in', height = '4', width = '6.5', res = 150)
 rdkb2
 dev.off()
 
@@ -189,6 +190,7 @@ atl <-urban_areas(year = '2020') %>%
 cnty <- counties(state = 'GA')
 cnty_list <- list_counties('GA')
 sts <- states(year = 2020) 
+ga <- filter(sts, STUSPS == "GA")
 rvr <- linear_water('GA', cnty_list$county_code) 
 rvr2 <- rvr %>%
   filter(FULLNAME %in% c('Chattahoochee Riv', 'Chattahoochie Riv', 'South Riv', 'Yellow Riv', 'Alcovy Riv', 'Ocmulgee Riv'))
@@ -299,7 +301,26 @@ mainmap
 
 ## https://ecodiv.earth/post/creating-a-map-with-inset-using-tmap/index.html
 insetmap <- 
-  tm_shape()
-  
+  tm_shape(ga) +
+  tm_borders() + 
+  tm_shape(sts) + 
+  tm_borders() + 
+  tm_text('STUSPS') + 
+  tm_shape(atl) + 
+  tm_fill(col = 'red') + 
+  tm_text('NAME10', col = 'black') +
+  tm_layout(frame = TRUE, 
+            outer.margins=c(0,0,0,0), 
+            inner.margins=c(0.2,0.2,0.2,0.2), asp=0)
+insetmap  
+
+library(grid)
+xy <- st_bbox(atl)
+asp <- (xy$ymax - xy$ymin)/(xy$xmax - xy$xmin)
+asp2 <- (xy$xmax - xy$xmin)/(xy$ymax - xy$ymin)
+w <- 0.25
+h <- asp2 * w
+vp <- viewport(x=0.3, y=0.8, width = w, height=h, just=c("right", "top"))
+
 ## save map of diversity/seg
-tmap_save(mainmap, "figures/site-map.png", units = 'in', width=6.5, height=6.5)
+tmap_save(mainmap, "figures/site-map.png", insets_tm = insetmap, insets_vp = vp, units = 'in', width=6.5, height=6.5)
