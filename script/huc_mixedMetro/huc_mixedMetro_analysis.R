@@ -1,9 +1,8 @@
 ##############################################################################
-# watershed prep for HUC Mixed Metro
+# Analysis for HUC Mixed Metro
 # created: July 11, 2023
-# Author: Taylor Hafley, Dean Hardy
+# Authors: Taylor Hafley, Dean Hardy
 # git: deanhardy/se_segregation
-# local location: Dropbox/school/Projects/inProgress/watershed/se_segregation/
 ##############################################################################
 rm(list=ls())
 
@@ -17,13 +16,15 @@ library(sf)
 library(tmap)
 library(tmaptools)
 
+#define data directory
+datadir <- file.path('/Users/dhardy/Dropbox/r_data/se_segregation')
 
 ########################################################################
 ## calculate area & percent of each BG in each HUC to set up
 ## proportional allocation method 
 ########################################################################
-gabg <- st_read('data/spatial/census_allyears.GEOJSON')
-wtr <- st_read('data/spatial/watersheds.GEOJSON')
+gabg <- st_read(paste0(datadir, '/data/spatial/census_allyears.GEOJSON'))
+wtr <- st_read(paste0(datadir, 'data/spatial/watersheds.GEOJSON'))
 
 shed <- list('huc12', 'huc10', 'local')
 dec_year <- list(1990, 2000, 2010, 2020)
@@ -111,7 +112,7 @@ fig <- ggplot(filter(shd_bg, HUC_NO %in% c('WAWA', 'SWRA', 'uFlint'))) +
         panel.grid.major.x = element_line(colour = 'grey', linetype = 'dotted'))
 fig
 
-png('figures/localsheds-pNonwhite+pBlack.png', units = 'in', height = '4', width = '6', res = 150)
+png(paste0(datadir, 'figures/localsheds-pNonwhite+pBlack.png', units = 'in', height = '4', width = '6', res = 150))
 fig
 dev.off()
 
@@ -120,14 +121,14 @@ class_smry <- shd_bg %>%
   filter(shed == 'huc12') %>%
   group_by(year, shed, class10) %>%
   summarise(total = sum(total), black = sum(black), white = sum(white), n = n())
-write.csv(st_drop_geometry(class_smry), 'tables/class_smry.csv')
+write.csv(st_drop_geometry(class_smry), paste0(datadir, 'tables/class_smry.csv'))
 
 blk_smry <- shd_bg %>%
   filter(class10 %in% c(3,9), shed %in% c('huc12', 'local')) %>%
   group_by(shed, year, class10) %>%
   summarise(total = sum(total), black = sum(black), nonwhite = sum(total) - sum(white), n = n()) %>%
   mutate(pBlack = (black/total) * 100, pNonwhite = (nonwhite/total) * 100)
-write.csv(st_drop_geometry(blk_smry), 'tables/summary_reults_blackonly.csv')
+write.csv(st_drop_geometry(blk_smry), paste0(datadir, 'tables/summary_reults_blackonly.csv'))
 
 # blk_smry2 <- blk_smry %>%
 #   separate(pBlack, c('year', 'shed'))
@@ -170,7 +171,7 @@ rdkb2 <- linegraph + scale_color_manual(values = leg_col2,
 rdkb2
 
 ## export summary by class
-png('figures/huc12-mixedmetro-1990-2020.png', units = 'in', height = '4', width = '6.5', res = 150)
+png(paste0(datadir, 'figures/huc12-mixedmetro-1990-2020.png', units = 'in', height = '4', width = '6.5', res = 150))
 rdkb2
 dev.off()
 
@@ -199,7 +200,7 @@ rvr2 <- rvr %>%
   filter(FULLNAME %in% c('Chattahoochee Riv', 'Chattahoochie Riv', 'South Riv', 'Yellow Riv', 'Alcovy Riv', 'Ocmulgee Riv'))
 lakes <- area_water('GA', cnty_list$county_code) %>%
   filter(FULLNAME %in% c('Lk Jackson', 'Lk Sidney Lanier'))
-mm <- st_read('data/mm_1990_2000_2010_2020') %>%
+mm <- st_read(paste0(datadir, 'data/mm_1990_2000_2010_2020')) %>%
   st_make_valid()
   
 ## organize classes with factors
@@ -269,7 +270,7 @@ tf <-
             legend.outside = FALSE)
 
 ## save map of diversity/seg
-tmap_save(tf, "figures/tmap-facets-huc12.png", units = 'in', width=6.5, height=6.5)
+tmap_save(tf, paste0(datadir, "figures/tmap-facets-huc12.png"), units = 'in', width=6.5, height=6.5)
 
 ## site map of ATL
 mainmap <- 
@@ -330,4 +331,4 @@ h <- asp2 * w
 vp <- viewport(x=0.2, y=0.99, width = w, height=h, just=c("right", "top"))
 
 ## save map of diversity/seg
-tmap_save(mainmap, "figures/site-map.png", insets_tm = insetmap, insets_vp = vp, units = 'in', width=6.5, height=6.5)
+tmap_save(mainmap, paste0(datadir, "figures/site-map.png"), insets_tm = insetmap, insets_vp = vp, units = 'in', width=6.5, height=6.5)
