@@ -120,14 +120,17 @@ class_smry <- shd_bg %>%
   filter(shed == 'huc12') %>%
   group_by(year, shed, class10) %>%
   summarise(total = sum(total), black = sum(black), white = sum(white), n = n())
-write.csv(st_drop_geometry(class_smry), 'results-tables/class_smry.csv')
+write.csv(st_drop_geometry(class_smry), 'tables/class_smry.csv')
 
 blk_smry <- shd_bg %>%
   filter(class10 %in% c(3,9), shed %in% c('huc12', 'local')) %>%
   group_by(shed, year, class10) %>%
   summarise(total = sum(total), black = sum(black), nonwhite = sum(total) - sum(white), n = n()) %>%
   mutate(pBlack = (black/total) * 100, pNonwhite = (nonwhite/total) * 100)
-write.csv(st_drop_geometry(blk_smry), 'results-tables/summary_reults_blackonly.csv')
+write.csv(st_drop_geometry(blk_smry), 'tables/summary_reults_blackonly.csv')
+
+# blk_smry2 <- blk_smry %>%
+#   separate(pBlack, c('year', 'shed'))
 
 ## create custom palette with custom legend labels for seg indices
 # race_mm_col <- c("#ff9900","#66cc00","#ffcc99", "#99ff99", "#cc99ff","#99752e")
@@ -196,6 +199,8 @@ rvr2 <- rvr %>%
   filter(FULLNAME %in% c('Chattahoochee Riv', 'Chattahoochie Riv', 'South Riv', 'Yellow Riv', 'Alcovy Riv', 'Ocmulgee Riv'))
 lakes <- area_water('GA', cnty_list$county_code) %>%
   filter(FULLNAME %in% c('Lk Jackson', 'Lk Sidney Lanier'))
+mm <- st_read('data/mm_1990_2000_2010_2020') %>%
+  st_make_valid()
   
 ## organize classes with factors
 shd_bg <- shd_bg %>%
@@ -271,7 +276,9 @@ mainmap <-
   # tm_shape(filter(shd_bg, shed == 'huc12' & year == 2020)) +
   # tm_fill('class10', legend.show = FALSE, palette = leg_col2) + 
   tm_shape(atl) +
-  tm_polygons(col = 'grey90', lty = 'solid') +
+  tm_borders(col = 'grey90', lty = 'solid') +
+  tm_shape(mm) + 
+  tm_fill('class_2020', legend.show = FALSE, palette = leg_col2) + 
   tm_shape(cnty) + 
   tm_borders(col = 'gray60', lty = 'dashed') + 
   tm_shape(lakes) + 
@@ -320,7 +327,7 @@ asp <- (xy$ymax - xy$ymin)/(xy$xmax - xy$xmin)
 asp2 <- (xy$xmax - xy$xmin)/(xy$ymax - xy$ymin)
 w <- 0.25
 h <- asp2 * w
-vp <- viewport(x=0.3, y=0.8, width = w, height=h, just=c("right", "top"))
+vp <- viewport(x=0.2, y=0.99, width = w, height=h, just=c("right", "top"))
 
 ## save map of diversity/seg
 tmap_save(mainmap, "figures/site-map.png", insets_tm = insetmap, insets_vp = vp, units = 'in', width=6.5, height=6.5)
