@@ -17,6 +17,9 @@ library(sf)
 library(tmap)
 library(tmaptools)
 
+#define data directory
+datadir <- file.path('/Users/dhardy/Dropbox/r_data/se_segregation')
+
 #########################################
 ##  HUC imports & fitting to ATL
 #########################################
@@ -29,9 +32,9 @@ atl <-urban_areas(year = '2020') %>%
   #              +units=m +no_defs")
 
 ## import watershed data based on manual extraction
-nhd1 <- st_read("data/spatial/nhd/nhd0307_huc10.shp") 
-nhd2 <- st_read("data/spatial/nhd/nhd0313_huc10.shp")
-nhd3 <- st_read("data/spatial/nhd/nhd0315_huc10.shp")
+nhd1 <- st_read(paste0(datadir, "data/spatial/nhd/nhd0307_huc10.shp"))
+nhd2 <- st_read(paste0(datadir, "data/spatial/nhd/nhd0313_huc10.shp"))
+nhd3 <- st_read(paste0(datadir, "data/spatial/nhd/nhd0315_huc10.shp"))
 nhd4 <- rbind(nhd1, nhd2)
 nhd <- rbind(nhd4, nhd3)
   # st_transform(crs = "+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=23 
@@ -50,9 +53,9 @@ huc10 <-  huc10 %>%
 ## HUC12s import ##
 
 ## import watershed data based on manual extraction
-nhd1 <- st_read("data/spatial/nhd/nhd0307_huc12.shp") 
-nhd2 <- st_read("data/spatial/nhd/nhd0313_huc12.shp")
-nhd3 <- st_read("data/spatial/nhd/nhd0315_huc12.shp")
+nhd1 <- st_read(paste0(datadir, "data/spatial/nhd/nhd0307_huc12.shp"))
+nhd2 <- st_read(paste0(datadir, "data/spatial/nhd/nhd0313_huc12.shp"))
+nhd3 <- st_read(paste0(datadir, "data/spatial/nhd/nhd0315_huc12.shp"))
 nhd4 <- rbind(nhd1, nhd2)
 nhd <- rbind(nhd4, nhd3)
   # st_transform(crs = "+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=23 
@@ -70,10 +73,10 @@ huc12 <- nhd %>%
 rm(nhd)
 
 ## import create 
-swra <- st_read("data/spatial/srwa_watersheds.shp") %>%
+swra <- st_read(paste0(datadir, "data/spatial/srwa_watersheds.shp")) %>%
   mutate(Name = 'SWRA', HUC_NO = 'SWRA', category = 'local') %>%
   select(Name, category, HUC_NO, geometry)
-wawa <- st_read("data/spatial/wawa_watersheds.shp") %>%
+wawa <- st_read(paste0(datadir, "data/spatial/wawa_watersheds.shp")) %>%
   mutate(Name = 'WAWA', HUC_NO = 'WAWA', category = 'local') %>%
   select(Name, category, HUC_NO, geometry)
 # uflint <- filter(huc10, HUC_NO == '0313000501') %>%
@@ -88,4 +91,4 @@ uflint <- filter(huc12, HUC_NO %in% c('031300050103', '031300050101', '031300050
 
 df <- rbind(huc10, huc12, swra, wawa, uflint)
 
-st_write(df, 'data/spatial/watersheds.GEOJSON', driver = 'GEOJSON', append = FALSE)
+st_write(df, paste0(datadir, 'data/spatial/watersheds.GEOJSON'), driver = 'GEOJSON', append = FALSE)

@@ -13,6 +13,9 @@ library(tigris)
 options(tigris_use_cache = TRUE)
 options(tigris_class = "sf")
 
+#define data directory
+datadir <- file.path('/Users/dhardy/Dropbox/r_data/se_segregation')
+
 # race data from decennial census needed for Mixed Metro classifications
 # [note: latinx, 'P0040003', = total - nonlatinx] #tested and confirmed
 # six racial groups: White, Black, American Indian, Asian or Pacific Islanders, 
@@ -33,7 +36,7 @@ cnty <- c("Baldwin","Banks","Barrow","Bartow","Butts","Carroll","Cherokee","Clar
 ###################################
 # read in Data for 1990 from NHGIS
 # STF3 
-gabg90 <- read_csv("data/data_share/nhgis0059_ds123_1990_blck_grp.csv")
+gabg90 <- read_csv(paste0(datadir, "data/data_share/nhgis0059_ds123_1990_blck_grp.csv"))
 
 # clean up tbl. cut  uneccessary, blank, and repetitive columns
 gabg90 <- gabg90[,-(c(3:11,14:20,22:26))]
@@ -57,7 +60,7 @@ gabg90 <- gabg90 %>%
   filter(COUNTY %in% cnty) 
 
 # read in shapefile of GA block groups
-ga_sp <- st_read("data/data_share/GA_blck_grp_1990.shp")
+ga_sp <- st_read(paste0(datadir, "data/data_share/GA_blck_grp_1990.shp"))
 gabg90 <- left_join(ga_sp, gabg90) %>%
   filter(!is.na(COUNTY)) %>%
   mutate(SqKM_BG = as.numeric(st_area(geometry)) / 1e6, year = 1990) %>%
@@ -174,8 +177,4 @@ tm_shape(atl) +
 ## export data ##
 gabg <- rbind(gabg90, gabg00, gabg10, gabg20)
 
-st_write(gabg, 'data/spatial/census_allyears.GEOJSON', driver = 'GEOJSON', append = FALSE)
-st_write(gabg90, 'data/spatial/census1990.GEOJSON', driver = 'GEOJSON', append = FALSE)
-st_write(gabg00, 'data/spatial/census2000.GEOJSON', driver = 'GEOJSON', append = FALSE)
-st_write(gabg10, 'data/spatial/census2010.GEOJSON', driver = 'GEOJSON', append = FALSE)
-st_write(gabg20, 'data/spatial/census2020.GEOJSON', driver = 'GEOJSON', append = FALSE)
+st_write(gabg, paste0(datadir, 'data/spatial/census_allyears.GEOJSON'), driver = 'GEOJSON', append = FALSE)
