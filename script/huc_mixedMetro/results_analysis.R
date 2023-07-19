@@ -1,12 +1,12 @@
-##############################################################################
+#### HUC Mixed Metro ####
 # Analysis of results for HUC Mixed Metro
 # created: July 11, 2023
 # Authors: Taylor Hafley, Dean Hardy
 # git: deanhardy/se_segregation
-##############################################################################
+
 rm(list=ls())
 
-# load necessary libraries
+#### load necessary libraries ####
 library(tidyverse)
 library(tidycensus)
 library(tigris)
@@ -19,9 +19,8 @@ library(tmaptools)
 #define data directory
 datadir <- file.path('/Users/dhardy/Dropbox/r_data/se_segregation/')
 
-################################
-## import and organize data ##
-################################
+
+#### import and organize data ####
 
 ## import results
 shd_bg <- st_read(paste0(datadir, 'data/spatial/hucMixedMetro.GEOJSON'))
@@ -68,7 +67,8 @@ lbl_mm <- c("White (Low)","Black (Low)","Latinx (Low)",
             "White (Mod)", "Black (Mod)","Latinx (Mod)", "Asian (Mod)",
             "High Diversity")
 
-######## plot RACE diversity/segregation by watershed ########
+#### figures from results ####
+
 ## plot local watershed stats over time
 fig <- ggplot(filter(shd_bg, HUC_NO %in% c('WAWA', 'SWRA', 'uFlint'))) + 
   geom_line(aes(year, (1-whtpct)*100, color = HUC_NO)) + 
@@ -88,7 +88,7 @@ png(paste0(datadir, 'figures/localsheds-pNonwhite+pBlack.png', units = 'in', hei
 fig
 dev.off()
 
-## generate summary tables of population stats
+###### summary tables of results ######
 class_smry <- shd_bg %>%
   filter(shed == 'huc12') %>%
   group_by(year, shed, class10) %>%
@@ -105,6 +105,7 @@ write.csv(st_drop_geometry(blk_smry), paste0(datadir, 'tables/summary_reults_bla
 # blk_smry2 <- blk_smry %>%
 #   separate(pBlack, c('year', 'shed'))
 
+###### graphs of results ######
 ## bargraph of diversity/seg
 # bargraph <- ggplot(data = blk_smry) +
 #   geom_col(aes()) +
@@ -147,8 +148,8 @@ dev.off()
 ## save bargraph
 # ggsave(rdkb2, file=paste('figures/barchart-', sheds[[z]], '-', blk_grps[[i]], ".png", sep=''), width = 6, height = 5, units = 'in', scale=2)
 
-
-######## facet map ########
+#### maps ####
+###### facet map ######
 # for (i in 1:length(dec_year)) {
 # 
 # assign(paste0("variable_", i), 
@@ -212,7 +213,7 @@ tf <-
 ## save map of diversity/seg
 tmap_save(tf, paste0(datadir, "figures/tmap-facets-huc12.png"), units = 'in', width=6.5, height=6.5)
 
-#### site map of ATL ####
+######## site map of ATL #########
 mainmap <- 
   # tm_shape(filter(shd_bg, shed == 'huc12' & year == 2020)) +
   # tm_fill('class10', legend.show = FALSE, palette = leg_col2) + 
