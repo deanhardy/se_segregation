@@ -30,7 +30,8 @@ wtr <- st_read(paste0(datadir, 'data/spatial/watersheds.GEOJSON'))
 rd <- primary_roads(year = 2022) %>%
   filter(RTTYP == 'I')
 atl <-urban_areas(year = '2020') %>%
-  filter(NAME10 == 'Atlanta, GA')
+  filter(NAME10 == 'Atlanta, GA') %>%
+  mutate(name = 'Atlanta')
 cnty <- counties(state = 'GA')
 cnty_list <- list_counties('GA')
 sts <- states(year = 2020) 
@@ -52,7 +53,7 @@ shd_bg <- shd_bg %>%
   mutate(class10 = factor(class10, levels = c(2,3,8,9,13,14)))
 mm2 <- mm2 %>% mutate(class_2020 = factor(class_2020, levels = c(2,3,7,8,9,10,13,14)))
 
-## filter to custom watersheds
+## filter to custom/local watersheds
 local <- shd_bg %>% filter(shed == 'local' & year == 2020)
 
 ## create custom palette with custom legend labels for seg indices
@@ -61,16 +62,15 @@ lbl2 <- c("White (Low)","Black (Low)","White (Mod)",
           "Black (Mod)","Latinx (Mod)","High Diversity")
 
 leg_mm <- c("#ff9900","#66cc00", "#9966ff",
-            "#ffcc99", "#99ff99", "#cc99ff","#ff9999",
+            "#ffcc99", "#99ff99", "#ff9999","#cc99ff",
             "#99752e")
 lbl_mm <- c("White (Low)","Black (Low)","Latinx (Low)",
-            "White (Mod)", "Black (Mod)","Latinx (Mod)", "Asian (Mod)",
+            "White (Mod)", "Black (Mod)","Asian (Mod)", "Latinx (Mod)", 
             "High Diversity")
 
 #### figures from results ####
-
 ## plot local watershed stats over time
-fig <- ggplot(filter(shd_bg, HUC_NO %in% c('WAWA', 'SWRA', 'uFlint'))) + 
+fig <- ggplot(filter(shd_bg, HUC_NO %in% c('WAWA', 'SRWA', 'uFlint'))) + 
   geom_line(aes(year, (1-whtpct)*100, color = HUC_NO)) + 
   geom_point(aes(year, (1-whtpct)*100, color = HUC_NO)) + 
   geom_line(aes(year, blkpct*100, color = HUC_NO), lty = 'dashed') + 
@@ -214,7 +214,7 @@ tf <-
 tmap_save(tf, paste0(datadir, "figures/tmap-facets-huc12.png"), units = 'in', width=6.5, height=6.5)
 
 ######## site map of ATL #########
-mainmap <- 
+sitemap <- 
   # tm_shape(filter(shd_bg, shed == 'huc12' & year == 2020)) +
   # tm_fill('class10', legend.show = FALSE, palette = leg_col2) + 
   tm_shape(atl) +
@@ -238,7 +238,7 @@ mainmap <-
   tm_scale_bar(breaks = c(0,20), text.size = 0.8, position= c(0.05, 0.0)) +
   tm_add_legend(type = c("fill"), labels = lbl_mm, col = leg_mm,
                 title = paste('Race (Diversity)')) +
-  tm_legend(position = c(0.73, 0.02),
+  tm_legend(position = c(0.75, 0.02),
             bg.color = "white",
             frame = TRUE,
             legend.text.size = .8,
@@ -246,7 +246,7 @@ mainmap <-
   tm_layout(frame = TRUE, 
             outer.margins=c(0,0,0,0), 
             inner.margins=c(0,0,0,0), asp=0)
-mainmap
+sitemap
 
 ## https://ecodiv.earth/post/creating-a-map-with-inset-using-tmap/index.html
 insetmap <- 
@@ -257,7 +257,7 @@ insetmap <-
   tm_text('STUSPS') + 
   tm_shape(atl) + 
   tm_fill(col = 'red') + 
-  tm_text('NAME10', col = 'black') +
+  tm_text('name', col = 'black') +
   tm_layout(frame = TRUE, 
             outer.margins=c(0,0,0,0), 
             inner.margins=c(0.2,0.2,0.2,0.2), asp=0)
@@ -269,7 +269,7 @@ asp <- (xy$ymax - xy$ymin)/(xy$xmax - xy$xmin)
 asp2 <- (xy$xmax - xy$xmin)/(xy$ymax - xy$ymin)
 w <- 0.25
 h <- asp2 * w
-vp <- viewport(x=0.2, y=0.99, width = w, height=h, just=c("right", "top"))
+vp <- viewport(x=0.27, y=0.99, width = w, height=h, just=c("right", "top"))
 
 ## save map of diversity/seg
-tmap_save(mainmap, paste0(datadir, "figures/site-map.png"), insets_tm = insetmap, insets_vp = vp, units = 'in', width=6.5, height=6.5)
+tmap_save(sitemap, paste0(datadir, "figures/site-map.png"), insets_tm = insetmap, insets_vp = vp, units = 'in', width=6.5, height=6.5)
