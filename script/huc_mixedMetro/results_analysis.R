@@ -102,8 +102,8 @@ blk_smry <- shd_bg %>%
   mutate(pBlack = (black/total) * 100, pNonwhite = (nonwhite/total) * 100)
 write.csv(st_drop_geometry(blk_smry), paste0(datadir, 'tables/summary_reults_blackonly.csv'))
 
-# blk_smry2 <- blk_smry %>%
-#   separate(pBlack, c('year', 'shed'))
+blk_smry2 <- filter(shd_bg, HUC_NO %in% c('WAWA', 'SRWA', 'uFlint')) %>%
+  select(HUC_NO, blkpct, year, class10)
 
 ###### graphs of results ######
 ## bargraph of diversity/seg
