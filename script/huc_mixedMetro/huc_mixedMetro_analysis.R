@@ -71,9 +71,9 @@ OUT <- OUT %>%
                   ahpipct*log(ahpipct) + othpct*log(othpct) +
                   ltxpct*log(ltxpct)))/log(6)) %>%
   mutate(class10 = 1,
-         class10 = replace(class10, E <= .3707 & whtpct > .65 | whtpct >=.8, 2),
-         class10 = replace(class10, E <= .3707 & blkpct > .65 | blkpct >= .8, 3),
-         class10 = replace(class10, E > .7414 & whtpct < .46 & blkpct < .46, 14),
+         class10 = replace(class10, E <= .3707 & whtpct > .65 | whtpct >=.8, 2), # lowDiversity, majorityWhite
+         class10 = replace(class10, E <= .3707 & blkpct > .65 | blkpct >= .8, 3), # lowDiversity, majorityBlack
+         class10 = replace(class10, E > .7414 & whtpct < .46 & blkpct < .46, 14), #highDiversity
          class10 = replace(class10, E > .3707 & E < .7414 & whtpct < .8 & whtpct > blkpct & whtpct > ltxpct,8),
          class10 = replace(class10, whtpct >.46 & whtpct <.8, 8),
          class10 = replace(class10, E > .3707 & E < .7414 & blkpct < .8 & blkpct > whtpct & blkpct > ltxpct,9),

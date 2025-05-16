@@ -10,66 +10,56 @@ library(sf)
 # census_api_key("", install = TRUE) ## Census API Key
 yr <- 2015
 
+#define data directory
+datadir <- file.path('/Users/dhardy/Dropbox/r_data/se_segregation/')
+
 ##############################################################
 ## data import and prepping
 ##############################################################
 
 ## import HUC12 data
-huc <- st_read("data/data_share/huc12_atlurban") %>%
+huc <- st_read(paste0(datadir, "data/data_share/huc12_atlurban")) %>%
   st_transform(4269)
-  
-## import Taylor's segregation/diversity mixed metro data for 2010
-seg <- st_read("data/shp/huc12/huc12_bg10.shp") %>%
-  st_transform(4269)
+
+## import MixedHydro results
+mh <- st_read(paste0(datadir, 'data/spatial/hucMixedMetro.GEOJSON')) %>%
+  mutate(AreaSqKm = as.numeric((st_area(geometry) / 1e6)))
 
 ## import DMR data downloaded from internet for HUC03 and filter to GA and make spatial
 ## https://echo.epa.gov/trends/loading-tool/get-data/custom-search
-dmr11 <- read.csv("data/dmr/dmr_2011_huc03.csv", skip = 4)
-dmr12 <- read.csv("data/dmr/dmr_2012_huc03.csv", skip = 4)
-dmr13 <- read.csv("data/dmr/dmr_2013_huc03.csv", skip = 4)
-dmr14 <- read.csv("data/dmr/dmr_2014_huc03.csv", skip = 4)
-dmr15 <- read.csv("data/dmr/dmr_2015_huc03.csv", skip = 4)
+dmr10 <- read.csv(paste0(datadir, "data/dmr/dmr_2010_huc03.csv"), skip = 3)
+# dmr11 <- read.csv(paste0(datadir, "data/dmr/dmr_2011_huc03.csv"), skip = 4)
+# dmr12 <- read.csv(paste0(datadir, "data/dmr/dmr_2012_huc03.csv"), skip = 4)
+# dmr13 <- read.csv(paste0(datadir, "data/dmr/dmr_2013_huc03.csv"), skip = 4)
+# dmr14 <- read.csv(paste0(datadir, "data/dmr/dmr_2014_huc03.csv"), skip = 4)
+# dmr15 <- read.csv(paste0(datadir, "data/dmr/dmr_2015_huc03.csv"), skip = 4)
+dmr20 <- read.csv(paste0(datadir, "data/dmr/dmr_2020_huc03.csv"), skip = 3)
 
-## combine dmr data, clip to Georgia, & sum by loading over watershed area in ATL urban area
-dmr <- rbind(dmr11, dmr12, dmr13, dmr14, dmr15) %>%
+## import dmr data
+## header descriptions: https://echo.epa.gov/tools/data-downloads/icis-npdes-dmr-summary
+# dmr20 <- read.csv(paste0(datadir, "data/dmr/GA_FY2020_NPDES_DMRS.csv"))
+
+## import facility registry service spatial data
+# frs <- read.csv(paste0(datadir, "data/dmr/STATE_SINGLE_GA.csv"))
+
+## combine dmr data, filter to Georgia, & sum by loading over watershed area in ATL urban area
+dmr <- rbind(dmr10, 
+             # dmr11, dmr12, dmr13, dmr14, dmr15, 
+             dmr20) %>%
   filter(State == "GA") %>%
   st_as_sf(coords = c("Facility.Longitude", "Facility.Latitude"), crs = 4269) %>%
   group_by(NPDES.Permit.Number) %>%
   summarise(poll_sum = sum(Pollutant.Load..kg.yr., na.rm = TRUE)) %>% ## extract load data from dmr, summarize by facility
-  st_intersection(huc) %>%
-  mutate(dmr_area = poll_sum/(AreaSqKm)) %>%
-  # st_intersection(seg) %>%
-  select(NPDES.Permit.Number, HUC12, Name, dmr_area)
+  st_intersection(mh) %>%
+  mutate(dmr_SqKm = poll_sum/(AreaSqKm))
+  # # st_intersection(seg) %>%
+  # select(NPDES.Permit.Number, HUC_NO, dmr_SqKm)
 
-## combine dmr data, clip to Georgia, & sum by loading over watershed area in ARC region
-## note that PERCENTAGE in 'huc' object equals that in ARC (from ArcGIS)
-dmr_seg <- rbind(dmr11, dmr12, dmr13, dmr14, dmr15) %>%
-  filter(State == "GA") %>%
-  st_as_sf(coords = c("Facility.Longitude", "Facility.Latitude"), crs = 4269) %>%
-  group_by(NPDES.Permit.Number) %>%
-  summarise(poll_sum = sum(Pollutant.Load..kg.yr., na.rm = TRUE)) %>% ## extract load data from dmr, summarize by facility
-  ungroup() %>%
-  st_intersection(huc) %>%
-  group_by(HUC12) %>%
-  summarize(dmr_sum = sum(poll_sum), AreaSqKm = mean(AreaSqKm)) %>%
-  mutate(dmr_SqKm = dmr_sum/AreaSqKm) %>%
-  st_set_geometry(NULL)
+# seg2 <- seg %>% select(HUC12, class10) %>% st_set_geometry(NULL)
+# 
+# dmr_seg <- merge(dmr_seg, seg2, by = 'HUC12')
 
-seg2 <- seg %>% select(HUC12, class10) %>% st_set_geometry(NULL)
-
-dmr_seg <- merge(dmr_seg, seg2, by = 'HUC12')
-
-boxplot(dmr_SqKm ~ class10, data = dmr_seg, notch = F, ylim = c(0,3e5))
-
-
-## prep data for mapping watershed total pollution loadings
-huc_cntrd <- st_centroid(huc) %>%
-  select(HUC12) %>%
-  left_join(dmr_seg)
-
-
-  st_intersection(seg) %>%
-  select(NPDES.Permit.Number, HUC12, Name, dmr_area)
+boxplot(dmr_SqKm ~ class10, data = dmr, notch = F, ylim = c(0,3e5))
 
 ## import spatial data for counties as "background" to map
 bkgd <- get_acs(geography = "county", 
