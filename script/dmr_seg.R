@@ -42,23 +42,44 @@ dmr20 <- read.csv(paste0(datadir, "data/dmr/dmr_2020_huc03.csv"), skip = 3)
 ## import facility registry service spatial data
 # frs <- read.csv(paste0(datadir, "data/dmr/STATE_SINGLE_GA.csv"))
 
+mh.20 <- mh %>%
+  filter(year %in% c(2020))
+  
 ## combine dmr data, filter to Georgia, & sum by loading over watershed area in ATL urban area
-dmr <- rbind(dmr10, 
+dmr <- rbind(
              # dmr11, dmr12, dmr13, dmr14, dmr15, 
              dmr20) %>%
   filter(State == "GA") %>%
   st_as_sf(coords = c("Facility.Longitude", "Facility.Latitude"), crs = 4269) %>%
   group_by(NPDES.Permit.Number) %>%
-  summarise(poll_sum = sum(Pollutant.Load..kg.yr., na.rm = TRUE)) %>% ## extract load data from dmr, summarize by facility
-  st_intersection(mh) %>%
-  mutate(dmr_SqKm = poll_sum/(AreaSqKm))
+  summarise(poll_sum = sum(Pollutant.Load..kg.yr., na.rm = TRUE),
+            n = n()) %>% ## extract load data from dmr, summarize by facility
+  ungroup() %>%
+  st_intersection(mh.20) %>%
+  group_by(HUC_NO) %>%
+  summarize(poll_sum_huc = sum(poll_sum, na.rm = T),
+            events_huc = sum(n)) %>%
+  st_drop_geometry()
   # # st_intersection(seg) %>%
   # select(NPDES.Permit.Number, HUC_NO, dmr_SqKm)
+
+## rejoin to mh
+mh_dmr <- left_join(mh.20, dmr) %>%
+  mutate(dmr_SqKm = poll_sum_huc/(AreaSqKm))
+  
+mh.f2 <- filter(mh_dmr, poll_sum_huc >0.000000e+00 & shed == 'huc12') %>%
+  group_by(HUC_NO, class10) %>%
+  summarize(mean.dmr = mean(dmr_SqKm))
+
+ggplot(filter(mh.f2, HUC_NO != '030701010103')) +
+  geom_point(aes(class10, mean.dmr))
 
 # seg2 <- seg %>% select(HUC12, class10) %>% st_set_geometry(NULL)
 # 
 # dmr_seg <- merge(dmr_seg, seg2, by = 'HUC12')
 
+## considerations
+## number of events, total, mean, and median size of events, ??
 boxplot(dmr_SqKm ~ class10, data = dmr, notch = F, ylim = c(0,3e5))
 
 ## import spatial data for counties as "background" to map

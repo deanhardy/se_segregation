@@ -71,18 +71,18 @@ OUT <- OUT %>%
                   ahpipct*log(ahpipct) + othpct*log(othpct) +
                   ltxpct*log(ltxpct)))/log(6)) %>%
   mutate(class10 = 1,
-         class10 = replace(class10, E <= .3707 & whtpct > .65 | whtpct >=.8, 2), # lowDiversity, majorityWhite
-         class10 = replace(class10, E <= .3707 & blkpct > .65 | blkpct >= .8, 3), # lowDiversity, majorityBlack
+         class10 = replace(class10, E <= .3707 & whtpct > .65 | whtpct >=.8, 2), # lowWhite
+         class10 = replace(class10, E <= .3707 & blkpct > .65 | blkpct >= .8, 3), # lowBlack
          class10 = replace(class10, E > .7414 & whtpct < .46 & blkpct < .46, 14), #highDiversity
-         class10 = replace(class10, E > .3707 & E < .7414 & whtpct < .8 & whtpct > blkpct & whtpct > ltxpct,8),
-         class10 = replace(class10, whtpct >.46 & whtpct <.8, 8),
-         class10 = replace(class10, E > .3707 & E < .7414 & blkpct < .8 & blkpct > whtpct & blkpct > ltxpct,9),
-         class10 = replace(class10, blkpct >.46 & blkpct <.8,9),
-         class10 = replace(class10, E > .3707 & E < .7414 & ltxpct < .8 & ltxpct > whtpct & ltxpct > blkpct,13),
-         class10 = replace(class10, E <= .3707 & ltxpct > .65 | ltxpct >= .8, 7),
-         class10 = replace(class10, ltxpct >.46 & ltxpct <.8, 13),
-         class10 = replace(class10, E <= .3707 & othpct > .65 | othpct >= .8, 4),
-         class10 = replace(class10, E <= .3707 & napct > .65 | napct >= .8, 5)) %>%
+         class10 = replace(class10, E > .3707 & E < .7414 & whtpct < .8 & whtpct > blkpct & whtpct > ltxpct,8), # modWhite
+         class10 = replace(class10, whtpct >.46 & whtpct <.8, 8), # modWhite
+         class10 = replace(class10, E > .3707 & E < .7414 & blkpct < .8 & blkpct > whtpct & blkpct > ltxpct,9), # modBlack
+         class10 = replace(class10, blkpct >.46 & blkpct <.8,9), # modBlack
+         class10 = replace(class10, E > .3707 & E < .7414 & ltxpct < .8 & ltxpct > whtpct & ltxpct > blkpct,13), # modLatinx
+         class10 = replace(class10, E <= .3707 & ltxpct > .65 | ltxpct >= .8, 7), #lowLatinx
+         class10 = replace(class10, ltxpct >.46 & ltxpct <.8, 13), # modLatinx
+         class10 = replace(class10, E <= .3707 & othpct > .65 | othpct >= .8, 4), # lowNA
+         class10 = replace(class10, E <= .3707 & napct > .65 | napct >= .8, 5)) %>% # lowOther
   mutate(year = dec_year[[i]], shed = shed[[z]])
 
 OUT$class10 <- OUT$class10 %>% as.factor()

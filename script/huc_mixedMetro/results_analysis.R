@@ -1,4 +1,4 @@
-#### HUC Mixed Metro ####
+#### HUC Mixed Metro (aka Mixed Hydro) ####
 # Analysis of results for HUC Mixed Metro
 # created: July 11, 2023
 # Authors: Taylor Hafley, Dean Hardy
@@ -18,7 +18,6 @@ library(tmaptools)
 
 #define data directory
 datadir <- file.path('/Users/dhardy/Dropbox/r_data/se_segregation/')
-
 
 #### import and organize data ####
 
