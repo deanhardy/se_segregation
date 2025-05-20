@@ -81,8 +81,8 @@ OUT <- OUT %>%
          class10 = replace(class10, E > .3707 & E < .7414 & ltxpct < .8 & ltxpct > whtpct & ltxpct > blkpct,13), # modLatinx
          class10 = replace(class10, E <= .3707 & ltxpct > .65 | ltxpct >= .8, 7), #lowLatinx
          class10 = replace(class10, ltxpct >.46 & ltxpct <.8, 13), # modLatinx
-         class10 = replace(class10, E <= .3707 & othpct > .65 | othpct >= .8, 4), # lowNA
-         class10 = replace(class10, E <= .3707 & napct > .65 | napct >= .8, 5)) %>% # lowOther
+         class10 = replace(class10, E <= .3707 & othpct > .65 | othpct >= .8, 4), # lowOther
+         class10 = replace(class10, E <= .3707 & napct > .65 | napct >= .8, 5)) %>% # lowNA
   mutate(year = dec_year[[i]], shed = shed[[z]])
 
 OUT$class10 <- OUT$class10 %>% as.factor()
@@ -92,6 +92,21 @@ shd_bg <- rbind(OUT, shd_bg)
 
   }
 }
+
+## add descriptors to classes
+shd_bg2 <- 
+  shd_bg %>%
+  mutate(category = if_else(class10 == 2, 'LDW', 
+                  if_else(class10 == 3, 'LDB', 
+                          if_else(class10 == 14, 'HD',
+                                  if_else(class10 == 8, 'MDW',
+                                          if_else(class10 == 9, 'MDB', 
+                                                  if_else(class10 == 13, 'MDL',
+                                                          if_else(class10 == 7, 'LDL',
+                                                                  if_else(class10 == 13, 'MDL',
+                                                                          if_else(class10 == 4, 'LDO',
+                                                                                  if_else(class10 == 5, 'LDN', class10))))))))))
+  )
 
 ## export results
 st_write(shd_bg, paste0(datadir, 'data/spatial/hucMixedMetro.GEOJSON'), driver = 'GEOJSON', append = FALSE)

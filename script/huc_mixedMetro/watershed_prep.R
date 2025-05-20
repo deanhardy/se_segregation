@@ -92,6 +92,11 @@ uflint <- filter(huc12, HUC_NO %in% c('031300050103', '031300050101', '031300050
   rename(geometry = x) %>%
   select(Name, category, HUC_NO)
 
+## count number of HUC12s inside "local" community watersheds
+nrow(huc12[srwa,])
+nrow(huc12[wawa,])
+nrow(huc12[uflint,])
+
 df <- rbind(huc10, huc12, srwa, wawa, uflint)
 
 st_write(df, paste0(datadir, 'data/spatial/watersheds.GEOJSON'), driver = 'GEOJSON', append = FALSE)
