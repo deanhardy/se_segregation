@@ -109,4 +109,4 @@ shd_bg2 <-
   )
 
 ## export results
-st_write(shd_bg, paste0(datadir, 'data/spatial/hucMixedMetro.GEOJSON'), driver = 'GEOJSON', append = FALSE)
+st_write(shd_bg2, paste0(datadir, 'data/spatial/hucMixedMetro.GEOJSON'), driver = 'GEOJSON', append = FALSE)
