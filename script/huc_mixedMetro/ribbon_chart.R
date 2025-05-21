@@ -91,6 +91,7 @@ clr <- c("#ff9900","#66cc00", "#9966ff",
 
 ## create Sankey diagram, aka ribbon chart
 ## https://plotly.com/r/sankey-diagram/
+## https://www.displayr.com/sankey-diagrams-r/
 ## https://www.sankeyart.com/content/blog/why-a-sankey-diagram-is-the-best-way-to-visualize-an-income-statement/
 # fig <- 
 #   plot_ly(
