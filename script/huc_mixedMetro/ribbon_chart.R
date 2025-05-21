@@ -10,6 +10,7 @@ library(tidyverse)
 library(tidycensus)
 library(plotly)
 library(networkD3)
+library(sf)
 
 #define data directory
 datadir <- file.path('/Users/dhardy/Dropbox/r_data/se_segregation/')
@@ -32,6 +33,7 @@ mh2 <- mh%>%
 
 ## calculate transition between decades for each pairing
 ## definitely better way to do this, transition matrices?
+
 links1 <- mh2 %>%
   select(1:3) %>%
   group_by(y90, y00) %>%
@@ -43,6 +45,33 @@ links1 <- mh2 %>%
   dplyr::arrange((source)) %>%
   mutate(source2 = consecutive_id(source)-1)
 
+S <- c('y90','y00')
+T <- c('y00','y10')
+OUT <- NULL
+lk.df <- NULL # used in loop
+
+for (i in 1:length(S)) {
+  for (z in 1:length(T)) {
+  
+OUT <- mh2 %>%
+  select(huc, S[[i]], T[[z]]) %>%
+  group_by(pick(2),pick(3)) %>%
+  summarise(n = n()) %>%
+  ungroup() %>%
+  mutate(s.yr = S[[i]], t.yr = T[[z]])
+
+names(OUT) = c("source", "target", "value", 's.yr', 't.yr')
+
+lk.df <- rbind(OUT, lk.df)
+  }}
+
+  # select(source, target, value) %>%
+  # dplyr::arrange((source)) %>%
+  # mutate(source2 = consecutive_id(source)-1)
+
+
+  }
+}
 nodes1 <- data.frame(name = unique(links1$source))
 
 links2 <- mh2 %>%
