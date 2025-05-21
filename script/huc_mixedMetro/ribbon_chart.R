@@ -51,7 +51,7 @@ OUT <- NULL
 lk.df <- NULL # used in loop
 
 for (i in 1:length(S)) {
-  for (z in 1:length(T)) {
+  for (z in seq_along(T)) {
   
 OUT <- mh2 %>%
   select(huc, S[[i]], T[[z]]) %>%
