@@ -91,11 +91,20 @@ fig <- sankeyNetwork(Links = links, Nodes = nodes,
               NodeGroup = 'group', LinkGroup = "group",
               colourScale = colorJS,
               fontSize= 12, nodeWidth = 30)
-fig 
 
-png(paste0(datadir, '/figures/sankey1020.png'), units = 'in', width = '7', height = '5', res = 150)
-fig
-dev.off()
+saveNetwork(
+  fig,
+  paste0(datadir, 'figures/sankey1020.html'),
+  selfcontained = TRUE
+)
+
+library(webshot)
+webshot(paste0(datadir, 'figures/sankey1020.html'),"sankey1020.png", vwidth = 1000, vheight = 900)
+
+# ggsave(file.path(datadir, 'figures/sankey1020.png'), fig, device = 'png', units = c('in'), width = 7, height = 5)
+# png(file.path(datadir, 'figures/sankey1020.png'), units = 'in', width = 7, height = 5, res = 150)
+# fig
+# dev.off()
 
 ################################################################################################
 ## AUTOMATE calculation transition between decades for each pairing through iterative process
