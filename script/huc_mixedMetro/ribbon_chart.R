@@ -36,7 +36,7 @@ mh <- st_read(paste0(datadir, 'data/spatial/hucMixedMetro.GEOJSON')) %>%
 ## then summarize by transition pairing
 ## then label source/target with unique identifying number 
 links <- mh %>%
-  select(1,2,3) %>%
+  select(1,2+2,3+2) %>%
   group_by(across(2), across(3)) %>%
   summarise(n = n()) %>%
   # mutate(source.ch = paste0(y90, '90'), target.ch = paste0(y00, '00')) %>%
@@ -85,13 +85,17 @@ colors <- paste(nodes$colors, collapse = '", "')
 colorJS <- paste('d3.scaleOrdinal(["', colors, '"])')
 
 ## plot sankey diagram
-sankeyNetwork(Links = links, Nodes = nodes,
+fig <- sankeyNetwork(Links = links, Nodes = nodes,
               Source = "source.no", Target = "target.no",
               Value = "value", NodeID = "name",
               NodeGroup = 'group', LinkGroup = "group",
               colourScale = colorJS,
               fontSize= 12, nodeWidth = 30)
+fig 
 
+png(paste0(datadir, '/figures/sankey1020.png'), units = 'in', width = '7', height = '5', res = 150)
+fig
+dev.off()
 
 ################################################################################################
 ## AUTOMATE calculation transition between decades for each pairing through iterative process
