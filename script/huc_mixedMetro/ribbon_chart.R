@@ -23,145 +23,98 @@ mh <- st_read(paste0(datadir, 'data/spatial/hucMixedMetro.GEOJSON')) %>%
   filter(shed == 'huc12') %>%
   select(HUC_NO, year, category) %>%
   # mutate(name = paste(category, year, sep = '_')) %>%
-  pivot_wider(names_from = year, values_from = category)
-
-## reorder years and rename columns
-mh <- mh[,c(1,5,4,3,2)]
-mh2 <- mh%>%
+  pivot_wider(names_from = year, values_from = category) %>%
+  select(1,5,4,3,2) %>%
   rename(huc = HUC_NO, y90=2, y00=3, y10=4, y20=5) %>%
   mutate(name = paste(y90))
 
-## calculate transition between decades for each pairing
-## definitely better way to do this, transition matrices?
+################################################################
+## MANUALLY assess decadal classification changes
+################################################################
 
-links1 <- mh2 %>%
-  select(1:3) %>%
+## assess source and target classifications
+## then summarize by transition pairing
+## then label source/target with unique identifying number 
+links <- mh %>%
+  select(1,2,3) %>%
   group_by(y90, y00) %>%
   summarise(n = n()) %>%
-  mutate(source = paste0(y90, '90'), target = paste0(y00, '00')) %>%
+  mutate(source.yr = paste0(y90, '90'), target.yr = paste0(y00, '00')) %>%
   rename(value = n) %>%
   ungroup() %>%
-  select(source, target, value) %>%
-  dplyr::arrange((source)) %>%
-  mutate(source2 = consecutive_id(source)-1)
+  select(source.yr, target.yr, value) %>%
+  dplyr::arrange((source.yr)) %>%
+  mutate(source = consecutive_id(source.yr)-1)  %>%
+  dplyr::arrange((target.yr)) %>%
+  mutate(target = consecutive_id(target.yr)+max(source),
+         group = if_else(str_length(source.yr) == 5, str_sub(source.yr, 1L, 3L),
+                               if_else(str_length(source.yr) == 4, str_sub(source.yr, 1L, 2L), source.yr))
+         ) %>%
+  select(source.yr, target.yr, source, target, value, group) %>%
+  arrange(source)
 
-S <- c('y90','y00')
-T <- c('y00','y10')
-OUT <- NULL
-lk.df <- NULL # used in loop
-
-for (i in 1:length(S)) {
-  for (z in seq_along(T)) {
-  
-OUT <- mh2 %>%
-  select(huc, S[[i]], T[[z]]) %>%
-  group_by(pick(2),pick(3)) %>%
-  summarise(n = n()) %>%
-  ungroup() %>%
-  mutate(s.yr = S[[i]], t.yr = T[[z]])
-
-names(OUT) = c("source", "target", "value", 's.yr', 't.yr')
-
-lk.df <- rbind(OUT, lk.df)
-  }}
-
-  # select(source, target, value) %>%
-  # dplyr::arrange((source)) %>%
-  # mutate(source2 = consecutive_id(source)-1)
-
-
-  }
-}
-nodes1 <- data.frame(name = unique(links1$source))
-
-links2 <- mh2 %>%
-  select(1:3) %>%
-  group_by(y90, y00) %>%
-  summarise(n = n()) %>%
-  mutate(source = paste0(y90, '90'), target = paste0(y00, '00')) %>%
-  rename(value = n) %>%
-  ungroup() %>%
-  select(source, target, value) %>%
-  dplyr::arrange((source)) %>%
-  mutate(source2 = consecutive_id(source)-1) %>%
-  dplyr::arrange((target)) %>%
-  mutate(target2 = consecutive_id(target)+3)
-
-nodes2 <- data.frame(name = unique(links2$target))
-
-nodes <- rbind(nodes1, nodes2) %>%
-  mutate(name2 = str_sub(name, 1L, 3L),
-         group = str_sub(name, 1L, 3L),
-         colors = c("#66cc00", "#ff9900","#99ff99", "#ffcc99",
-                    "#99752e", "#66cc00", "#ff9900","#99ff99", "#ffcc99"))
-
-links <- links2 %>%
-  select(source2, target2, value) %>%
-  arrange(source2) %>%
-  mutate(group = str_sub(links1$source, 1L, 3L))
-
-# mh0010 <- mh2 %>%
-#   select(huc,y00,y10) %>%
-#   group_by(y00,y10) %>%
-#   summarise(n = n())
-# 
-# mh1020 <- mh2 %>%
-#   select(huc,y10,y20) %>%
-#   group_by(y10,y20) %>%
-#   summarise(n = n())
-
-## merge all three transitions
+## nodes
+nodes1 <- links %>% distinct(source.yr) %>% rename (name.yr = 1)
+nodes2 <- links %>% arrange(target.yr) %>% distinct(target.yr) %>% rename (name.yr = 1)
+nodes <- 
+  rbind(nodes1, nodes2) %>%
+  mutate(name = if_else(str_length(name.yr) == 5, str_sub(name.yr, 1L, 3L),
+                        if_else(str_length(name.yr) == 4, str_sub(name.yr, 1L, 2L), name.yr)),
+         colors = if_else(name == 'HD', "#99752e",
+                          if_else(name == 'LDB', "#66cc00",
+                                  if_else(name == 'MDB', "#99ff99",
+                                          if_else(name == 'LDW', "#ff9900",
+                                                  if_else(name == 'MDW',"#ffcc99", 
+                                                          if_else(name == 'HDL', "#9966ff", 
+                                                                  if_else(name == 'MDL',"#cc99ff",
+                                                                          if_else(name == 'MDA', "#ff9999", name)))))))),
+         group = name
+  ) %>%
+  select(-name.yr)
 
 
-## define colors
-clr <- c("#ff9900","#66cc00", "#9966ff",
-                   "#ffcc99", "#99ff99", "#ff9999","#cc99ff",
-                   "#99752e")
-
+###########################################
 ## create Sankey diagram, aka ribbon chart
 ## https://plotly.com/r/sankey-diagram/
 ## https://www.displayr.com/sankey-diagrams-r/
 ## https://www.sankeyart.com/content/blog/why-a-sankey-diagram-is-the-best-way-to-visualize-an-income-statement/
-# fig <- 
-#   plot_ly(
-#     data = mh9000,
-#     type = "sankey",
-#     orientation = "h",
-#     node = list(
-#         label = y00,
-#         color = clr,
-#         pad = 15,
-#         thickness = 20,
-#         line = list(
-#             color = "black",
-#             width = 0.5
-#           )
-#       ),
-#       link = list(
-#         source = y90,
-#         target = y00,
-#         value = n
-#       )
-#   )
+###########################################
 
+## create colors for decadal transition pairings
 colors <- paste(nodes$colors, collapse = '", "')
 colorJS <- paste('d3.scaleOrdinal(["', colors, '"])')
-##
-# nodes = data.frame("name" = 
-#                      c("Node A", # Node 0
-#                        "Node B", # Node 1
-#                        "Node C", # Node 2
-#                        "Node D"))# Node 3
-# links = as.data.frame(matrix(c(
-#   0, 1, 10, # Each row represents a link. The first number
-#   0, 2, 20, # represents the node being conntected from. 
-#   1, 3, 30, # the second number represents the node connected to.
-#   2, 3, 40),# The third number is the value of the node
-#   byrow = TRUE, ncol = 3))
-names(links) = c("source", "target", "value", 'group')
+
+## plot sankey diagram
 sankeyNetwork(Links = links, Nodes = nodes,
               Source = "source", Target = "target",
-              Value = "value", NodeID = "name2",
+              Value = "value", NodeID = "name",
               NodeGroup = 'group', LinkGroup = "group",
               colourScale = colorJS,
               fontSize= 12, nodeWidth = 30)
+
+
+################################################################################################
+## AUTOMATE calculation transition between decades for each pairing through iterative process
+## still working out how to do this
+################################################################################################
+# S <- c('y00')
+# T <- c('y10')
+# OUT <- NULL
+# lk.df <- NULL # used in loop
+# 
+# for (i in seq_along(S)) {
+#   for (z in seq_along(T)) {
+#   
+# OUT <- mh2 %>%
+#   select(huc, S[[i]], T[[z]]) %>%
+#   group_by(pick(2),pick(3)) %>%
+#   summarise(n = n()) %>%
+#   ungroup() %>%
+#   mutate(s.yr = S[[i]], t.yr = T[[z]])
+# 
+# names(OUT) = c("source", "target", "value", 's.yr', 't.yr')
+# 
+# lk.df <- rbind(OUT, lk.df)
+#   }}
+
+
