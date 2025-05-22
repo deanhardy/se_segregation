@@ -37,29 +37,29 @@ mh <- st_read(paste0(datadir, 'data/spatial/hucMixedMetro.GEOJSON')) %>%
 ## then label source/target with unique identifying number 
 links <- mh %>%
   select(1,2,3) %>%
-  group_by(y90, y00) %>%
+  group_by(across(2), across(3)) %>%
   summarise(n = n()) %>%
-  mutate(source.yr = paste0(y90, '90'), target.yr = paste0(y00, '00')) %>%
-  rename(value = n) %>%
+  # mutate(source.ch = paste0(y90, '90'), target.ch = paste0(y00, '00')) %>%
+  rename(value = n, source.ch = 1, target.ch = 2) %>%
   ungroup() %>%
-  select(source.yr, target.yr, value) %>%
-  dplyr::arrange((source.yr)) %>%
-  mutate(source = consecutive_id(source.yr)-1)  %>%
-  dplyr::arrange((target.yr)) %>%
-  mutate(target = consecutive_id(target.yr)+max(source),
-         group = if_else(str_length(source.yr) == 5, str_sub(source.yr, 1L, 3L),
-                               if_else(str_length(source.yr) == 4, str_sub(source.yr, 1L, 2L), source.yr))
+  select(source.ch, target.ch, value) %>%
+  dplyr::arrange((source.ch)) %>%
+  mutate(source.no = consecutive_id(source.ch)-1)  %>%
+  dplyr::arrange((target.ch)) %>%
+  mutate(target.no = consecutive_id(target.ch)+max(source.no),
+         group = if_else(str_length(source.ch) == 5, str_sub(source.ch, 1L, 3L),
+                               if_else(str_length(source.ch) == 4, str_sub(source.ch, 1L, 2L), source.ch))
          ) %>%
-  select(source.yr, target.yr, source, target, value, group) %>%
-  arrange(source)
+  select(source.ch, target.ch, source.no, target.no, value, group) %>%
+  arrange(source.ch)
 
 ## nodes
-nodes1 <- links %>% distinct(source.yr) %>% rename (name.yr = 1)
-nodes2 <- links %>% arrange(target.yr) %>% distinct(target.yr) %>% rename (name.yr = 1)
+nodes1 <- links %>% arrange(source.ch) %>% distinct(source.ch) %>% rename (name.ch = 1)
+nodes2 <- links %>% arrange(target.ch) %>% distinct(target.ch) %>% rename (name.ch = 1)
 nodes <- 
   rbind(nodes1, nodes2) %>%
-  mutate(name = if_else(str_length(name.yr) == 5, str_sub(name.yr, 1L, 3L),
-                        if_else(str_length(name.yr) == 4, str_sub(name.yr, 1L, 2L), name.yr)),
+  mutate(name = if_else(str_length(name.ch) == 5, str_sub(name.ch, 1L, 3L),
+                        if_else(str_length(name.ch) == 4, str_sub(name.ch, 1L, 2L), name.ch)),
          colors = if_else(name == 'HD', "#99752e",
                           if_else(name == 'LDB', "#66cc00",
                                   if_else(name == 'MDB', "#99ff99",
@@ -70,7 +70,7 @@ nodes <-
                                                                           if_else(name == 'MDA', "#ff9999", name)))))))),
          group = name
   ) %>%
-  select(-name.yr)
+  select(-name.ch)
 
 
 ###########################################
@@ -86,7 +86,7 @@ colorJS <- paste('d3.scaleOrdinal(["', colors, '"])')
 
 ## plot sankey diagram
 sankeyNetwork(Links = links, Nodes = nodes,
-              Source = "source", Target = "target",
+              Source = "source.no", Target = "target.no",
               Value = "value", NodeID = "name",
               NodeGroup = 'group', LinkGroup = "group",
               colourScale = colorJS,
@@ -104,15 +104,15 @@ sankeyNetwork(Links = links, Nodes = nodes,
 # 
 # for (i in seq_along(S)) {
 #   for (z in seq_along(T)) {
-#   
+# 
 # OUT <- mh2 %>%
 #   select(huc, S[[i]], T[[z]]) %>%
 #   group_by(pick(2),pick(3)) %>%
 #   summarise(n = n()) %>%
 #   ungroup() %>%
-#   mutate(s.yr = S[[i]], t.yr = T[[z]])
+#   mutate(s.ch = S[[i]], t.ch = T[[z]])
 # 
-# names(OUT) = c("source", "target", "value", 's.yr', 't.yr')
+# names(OUT) = c("source", "target", "value", 's.ch', 't.ch')
 # 
 # lk.df <- rbind(OUT, lk.df)
 #   }}
