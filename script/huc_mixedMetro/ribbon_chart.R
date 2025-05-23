@@ -2,6 +2,7 @@
 # created: May 20, 2025
 # Authors: Dean Hardy
 # git: deanhardy/se_segregation
+# helpful: https://www.rigordatasolutions.com/post/how-to-create-sankey-diagram-in-r-with-networkd3
 
 rm(list=ls())
 
@@ -102,4 +103,4 @@ webshot(paste0(datadir, 'figures/sankey1990_2020.html'), paste0(datadir, 'figure
 
 ## NOT WOKRING for some reason
 ## export as png file 
-ggsave(file.path(datadir, 'figures/sankey1990_2020.png'), fig, device = 'png', units = c('in'), width = 7, height = 5)
+# ggsave(file.path(datadir, 'figures/sankey1990_2020.png'), fig, device = 'png', units = c('in'), width = 7, height = 5)
