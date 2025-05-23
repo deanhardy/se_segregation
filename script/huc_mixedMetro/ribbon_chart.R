@@ -88,7 +88,7 @@ fig <- sankeyNetwork(Links = links, Nodes = nodes,
               Value = "value", NodeID = "name",
               NodeGroup = 'group', LinkGroup = "group",
               colourScale = colorJS,
-              fontSize= 12, nodeWidth = 30)
+              fontSize= 12, nodeWidth = 20)
 fig
 
 ## export as html file
