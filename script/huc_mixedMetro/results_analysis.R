@@ -24,6 +24,11 @@ datadir <- file.path('/Users/dhardy/Dropbox/r_data/se_segregation/')
 ## import results
 shd_bg <- st_read(paste0(datadir, 'data/spatial/hucMixedMetro.GEOJSON'))
 
+## quick huc10 results
+h10 <- shd_bg %>% filter(shed == 'huc10') %>% group_by(year, class10) %>% summarise (n = n())
+## white dominant
+h10 %>% filter(class10 %in% c('2','8')) %>% ungroup() %>% summarise(sum(n))
+
 ## download ancillary data for map
 wtr <- st_read(paste0(datadir, 'data/spatial/watersheds.GEOJSON'))
 rd <- primary_roads(year = 2022) %>%
@@ -40,17 +45,19 @@ ga <- filter(sts, STUSPS == "GA")
 #   filter(FULLNAME %in% c('Chattahoochee Riv', 'Chattahoochie Riv', 'South Riv', 'Yellow Riv', 'Alcovy Riv', 'Ocmulgee Riv'))
 # lakes <- area_water('GA', cnty_list$county_code) %>%
 #   filter(FULLNAME %in% c('Lk Jackson', 'Lk Sidney Lanier'))
-mm <- st_read(paste0(datadir, 'data/mm_1990_2000_2010_2020')) %>%
-  st_make_valid()
-mm2 <- mm %>%
-  st_transform(4269) 
-mm2 <- 
-  mm2[atl,]
+
+## OLD mm results from Taylor
+# mm <- st_read(paste0(datadir, 'data/mm_1990_2000_2010_2020')) %>%
+#   st_make_valid()
+# mm2 <- mm %>%
+#   st_transform(4269) 
+# mm2 <- 
+#   mm2[atl,]
+# mm2 <- mm2 %>% mutate(class_2020 = factor(class_2020, levels = c(2,3,7,8,9,10,13,14)))
 
 ## organize classes with factors
 shd_bg <- shd_bg %>%
   mutate(class10 = factor(class10, levels = c(2,3,8,9,13,14)))
-mm2 <- mm2 %>% mutate(class_2020 = factor(class_2020, levels = c(2,3,7,8,9,10,13,14)))
 
 ## filter to custom/local watersheds
 local <- shd_bg %>% filter(shed == 'local' & year == 2020)
@@ -88,12 +95,15 @@ fig
 dev.off()
 
 ###### summary tables of results ######
+
+## summarize huc12s by year and classification
 class_smry <- shd_bg %>%
   filter(shed == 'huc12') %>%
   group_by(year, shed, class10) %>%
   summarise(total = sum(total), black = sum(black), white = sum(white), n = n())
 write.csv(st_drop_geometry(class_smry), paste0(datadir, 'tables/class_smry.csv'))
 
+## summarize huc12s by watershed type, year, and classification
 blk_smry <- shd_bg %>%
   filter(class10 %in% c(3,9), shed %in% c('huc12', 'local')) %>%
   group_by(shed, year, class10) %>%
@@ -101,8 +111,11 @@ blk_smry <- shd_bg %>%
   mutate(pBlack = (black/total) * 100, pNonwhite = (nonwhite/total) * 100)
 write.csv(st_drop_geometry(blk_smry), paste0(datadir, 'tables/summary_reults_blackonly.csv'))
 
+## summarize community watersheds by year and classification; about the same as above
 blk_smry2 <- filter(shd_bg, HUC_NO %in% c('WAWA', 'SRWA', 'uFlint')) %>%
-  select(HUC_NO, blkpct, year, class10)
+  group_by(HUC_NO, year) %>%
+  summarise(total = sum(total), black = sum(black), nonwhite = sum(total) - sum(white), n = n()) %>%
+  mutate(pBlack = (black/total) * 100, pNonwhite = (nonwhite/total) * 100)
 
 ###### graphs of results ######
 ## bargraph of diversity/seg
