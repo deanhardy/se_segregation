@@ -23,7 +23,9 @@ huc <- st_read(paste0(datadir, "data/data_share/huc12_atlurban")) %>%
 
 ## import MixedHydro results
 mh <- st_read(paste0(datadir, 'data/spatial/hucMixedMetro.GEOJSON')) %>%
-  mutate(AreaSqKm = as.numeric((st_area(geometry) / 1e6)))
+  mutate(AreaSqKm = as.numeric((st_area(geometry) / 1e6)),
+         pocpct = 1-whtpct) %>%
+  filter(shed == 'huc12' & year == 2020)
 
 ## import DMR data downloaded from internet for HUC03 and filter to GA and make spatial
 ## https://echo.epa.gov/trends/loading-tool/get-data/custom-search
@@ -63,16 +65,18 @@ dmr <- rbind(
   # # st_intersection(seg) %>%
   # select(NPDES.Permit.Number, HUC_NO, dmr_SqKm)
 
-## rejoin to mh
+## join mixedhydro data to dmr data for ATL region
 mh_dmr <- left_join(mh.20, dmr) %>%
-  mutate(dmr_SqKm = poll_sum_huc/(AreaSqKm))
+  mutate(dmr_SqKm = poll_sum_huc/(AreaSqKm)) %>%
+  filter(shed == 'huc12')
   
-mh.f2 <- filter(mh_dmr, poll_sum_huc >0.000000e+00 & shed == 'huc12') %>%
-  group_by(HUC_NO, class10) %>%
-  summarize(mean.dmr = mean(dmr_SqKm))
+# mh.dmr2 <- filter(mh_dmr, poll_sum_huc >0.000000e+00) %>%
+#   group_by(HUC_NO, class10)
 
-ggplot(filter(mh.f2, HUC_NO != '030701010103')) +
-  geom_point(aes(class10, mean.dmr))
+ggplot(
+  filter (mh_dmr, HUC_NO != '030701010103')
+  ) +
+  geom_point(aes(class10, poll_sum_huc))
 
 # seg2 <- seg %>% select(HUC12, class10) %>% st_set_geometry(NULL)
 # 
@@ -80,7 +84,7 @@ ggplot(filter(mh.f2, HUC_NO != '030701010103')) +
 
 ## considerations
 ## number of events, total, mean, and median size of events, ??
-boxplot(dmr_SqKm ~ class10, data = dmr, notch = F, ylim = c(0,3e5))
+# boxplot(dmr_SqKm ~ class10, data = dmr, notch = F, ylim = c(0,3e5))
 
 ## import spatial data for counties as "background" to map
 bkgd <- get_acs(geography = "county", 
@@ -107,14 +111,17 @@ lbl <- c("Latinx (Mod)", "High Diversity",
          "White (Low)", "Black (Low)",
          "White (Mod)", "Black (Mod)")
 
+mh_dmr2 <- filter (mh_dmr, HUC_NO != '030701010103')
+
 ## mapping race and diversity
 seg_map <- 
   tm_shape(huc) +
   tm_borders(col = "white") +
   tm_shape(bkgd) +
   tm_fill(col = "azure1") +
-  tm_shape(seg) +
+  tm_shape(mh_dmr2) +
   tm_fill("class10", legend.show = FALSE, palette = col) +
+  tm_symbols(size = 'poll_sum_huc')  + 
   tm_shape(rd) + 
   tm_lines(col = "black") +
   tm_shape(bkgd) +
@@ -132,6 +139,26 @@ seg_map <-
             outer.margins=c(0,0,0,0), 
             inner.margins=c(0,0,0,0), asp=0)
 seg_map
+
+# GET EQUATION AND R-SQUARED AS STRING
+# SOURCE: https://groups.google.com/forum/#!topic/ggplot2/1TgH-kG5XMA
+
+lm_eqn <- function(df){
+  m <- lm(y ~ x, df);
+  eq <- substitute(italic(y) == a + b %.% italic(x)*","~~italic(r)^2~"="~r2, 
+                   list(a = format(unname(coef(m)[1]), digits = 2),
+                        b = format(unname(coef(m)[2]), digits = 2),
+                        r2 = format(summary(m)$r.squared, digits = 3)))
+  as.character(as.expression(eq));
+}
+
+mh_dmr3 <- mh_dmr2 %>%
+  rename(x = pocpct, y = poll_sum_huc)
+
+ggplot(mh_dmr3, aes(x, y)) + 
+  geom_point() + 
+  geom_smooth(method = lm) + 
+  geom_text(x = 0.25, y = 4000000, label = lm_eqn(mh_dmr3), parse = TRUE)
 
 # tiff("figures/raceseg_map2011-15.tif", res = 300, units = "in", 
 #      height = 7.5, width = 10, compression = "lzw")
