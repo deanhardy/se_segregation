@@ -79,7 +79,8 @@ nodes <- nodes %>%
                                                                           if_else(name == 'MDA', "#ff9999", name)))))))))
 
 ## create colors for decadal transition pairings
-colors <- paste(nodes$colors, collapse = '", "')
+colors <- paste(unique(nodes$colors), collapse = '", "')
+# colors <- paste(unique(nodes[, .(group, color)])$color, collapse = '", "')
 colorJS <- paste('d3.scaleOrdinal(["', colors, '"])')
 
 ## plot sankey diagram
