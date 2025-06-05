@@ -36,7 +36,7 @@ cnty <- c("Baldwin","Banks","Barrow","Bartow","Butts","Carroll","Cherokee","Clar
 ###################################
 # read in Data for 1990 from NHGIS
 # STF3 
-gabg90 <- read_csv(paste0(datadir, "data/data_share/nhgis0059_ds123_1990_blck_grp.csv"))
+gabg90 <- read_csv(paste0(datadir, "/data/data_share/nhgis0059_ds123_1990_blck_grp.csv"))
 
 # clean up tbl. cut  uneccessary, blank, and repetitive columns
 gabg90 <- gabg90[,-(c(3:11,14:20,22:26))]
@@ -60,7 +60,7 @@ gabg90 <- gabg90 %>%
   filter(COUNTY %in% cnty) 
 
 # read in shapefile of GA block groups
-ga_sp <- st_read(paste0(datadir, "data/data_share/GA_blck_grp_1990.shp"))
+ga_sp <- st_read(paste0(datadir, "/data/data_share/GA_blck_grp_1990.shp"))
 gabg90 <- left_join(ga_sp, gabg90) %>%
   filter(!is.na(COUNTY)) %>%
   mutate(SqKM_BG = as.numeric(st_area(geometry)) / 1e6, year = 1990) %>%
@@ -171,7 +171,7 @@ atl <- urban_areas(year = '2020') %>%
 ## plot map
 tm_shape(atl) +
   tm_fill('red') + 
-  tm_shape(gabg90) + 
+  tm_shape(gabg20) + 
   tm_borders()
 
 ## export data ##

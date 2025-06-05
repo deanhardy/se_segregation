@@ -29,6 +29,16 @@ h10 <- shd_bg %>% filter(shed == 'huc10') %>% group_by(year, class10) %>% summar
 ## white dominant
 h10 %>% filter(class10 %in% c('2','8')) %>% ungroup() %>% summarise(sum(n))
 
+## quick huc12 results
+h12 <- shd_bg %>% filter(shed == 'huc12') %>% group_by(year, class10) %>% summarise (n = n())
+## white dominant
+h12 %>% filter(class10 %in% c('2','8')) %>% ungroup() %>% summarise(sum(n))
+
+## pop avg for hucs to compare to census unit averages
+huc.pop <- shd_bg %>% group_by(year, shed) %>% 
+  summarise(pop.avg = mean(total)) 
+# SqKM = as.numeric(st_area(geometry)) / 1e6)
+
 ## download ancillary data for map
 wtr <- st_read(paste0(datadir, 'data/spatial/watersheds.GEOJSON'))
 rd <- primary_roads(year = 2022) %>%

@@ -26,8 +26,11 @@ datadir <- file.path('/Users/dhardy/Dropbox/r_data/se_segregation/')
 gabg <- st_read(paste0(datadir, '/data/spatial/census_allyears.GEOJSON'))
 wtr <- st_read(paste0(datadir, 'data/spatial/watersheds.GEOJSON'))
 
-shed <- list('huc12', 'huc10', 'local')
-dec_year <- list(1990, 2000, 2010, 2020)
+shed <- list('huc12')
+# , 'huc10', 'local')
+dec_year <- list(
+  # 1990, 2000, 2010, 
+  2020)
 shd_bg <- NULL
 
 for (i in 1:length(dec_year)) {
@@ -42,7 +45,7 @@ OUT <- bg[shd,]
 
 # identify sub-geographies that intersect watershed boundary
 int <- st_intersection(OUT, shd)
-
+}}
 # extract new BGs within HUCs
 OUT <- int %>%
   mutate(BG_SqKmHuc = round(as.numeric((st_area(geometry) / 1e6)),4)) %>%
@@ -63,7 +66,8 @@ OUT <- OUT %>%
             napct = round((native_american/total),4),
             ahpipct = round((ahpi/total), 4),
             othpct = round((oth2/total), 4),
-            ltxpct = round((latinx/total), 4))
+            ltxpct = round((latinx/total), 4),
+            n = n())
 
 ## BG -- HUC entropy calculation
 OUT <- OUT %>%
