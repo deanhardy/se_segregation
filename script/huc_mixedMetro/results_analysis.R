@@ -15,6 +15,7 @@ options(tigris_class = "sf")
 library(sf)
 library(tmap)
 library(tmaptools)
+library(plotrix)
 
 #define data directory
 datadir <- file.path('/Users/dhardy/Dropbox/r_data/se_segregation/')
@@ -22,7 +23,8 @@ datadir <- file.path('/Users/dhardy/Dropbox/r_data/se_segregation/')
 #### import and organize data ####
 
 ## import results
-shd_bg <- st_read(paste0(datadir, 'data/spatial/hucMixedMetro.GEOJSON'))
+shd_bg <- st_read(paste0(datadir, 'data/spatial/hucMixedMetro.GEOJSON')) %>%
+  mutate(SqKM = as.numeric(st_area(geometry)) / 1e6)
 
 ## quick huc10 results
 h10 <- shd_bg %>% filter(shed == 'huc10') %>% group_by(year, class10) %>% summarise (n = n())
@@ -35,10 +37,15 @@ h12 <- shd_bg %>% filter(shed == 'huc12') %>% group_by(year, class10) %>% summar
 h12 %>% filter(class10 %in% c('2','8')) %>% ungroup() %>% summarise(sum(n))
 
 ## pop avg for hucs to compare to census unit averages
-huc.pop <- shd_bg %>% group_by(year, shed) %>% 
-  summarise(pop.avg = mean(total)) 
-# SqKM = as.numeric(st_area(geometry)) / 1e6)
-
+huc.sum <- shd_bg %>% group_by(year, shed) %>% 
+  summarise(pop.sum = sum(total),
+            pop.avg = mean(total), 
+            pop.se = std.error(total),
+            SqKM.sum = sum(SqKM),
+            SqKM.avg = mean(SqKM),
+            Sqkm.se = std.error(SqKM)
+            )
+  
 ## download ancillary data for map
 wtr <- st_read(paste0(datadir, 'data/spatial/watersheds.GEOJSON'))
 rd <- primary_roads(year = 2022) %>%

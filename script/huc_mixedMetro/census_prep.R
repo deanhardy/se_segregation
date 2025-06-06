@@ -31,6 +31,10 @@ cnty <- c("Baldwin","Banks","Barrow","Bartow","Butts","Carroll","Cherokee","Clar
           "Paulding","Pickens","Pike","Putnam","Polk","Rabun",
           "Rockdale","Spalding","Towns","Union","Upson","Walton","White")
 
+arc <- c("Cherokee","Clayton","Cobb", "DeKalb", "Douglas",
+          "Fayette","Forsyth", "Fulton","Gwinnett", "Henry",
+          "Rockdale")
+
 ###################################
 #### 1990 decennial data prep ####
 ###################################
@@ -134,7 +138,7 @@ dec_vars20 <- c(total = "P2_001N",
                 twomore = "P2_011N"
 )
 
-# import race data using tidycensus
+# import race data using tidycensus for HUC10S that intersect ARC
 gabg20 <- get_decennial(geography = "block group", variables = dec_vars20, 
                       state = "GA", county = cnty, year = 2020,
                       output = 'wide',
@@ -144,6 +148,46 @@ gabg20 <- get_decennial(geography = "block group", variables = dec_vars20,
          oth2 = other + twomore) %>%
   select(year, GEOID, NAME, total, latinx, nonlatinx, white, black, native_american, ahpi, oth2, SqKM_BG, geometry)
 
+
+# import race data using tidycensus for ARC
+arcbg20 <- get_decennial(geography = "block group", variables = dec_vars20, 
+                        state = "GA", county = arc, year = 2020,
+                        output = 'wide',
+                        geometry = TRUE) %>%
+  mutate(SqKM_BG = as.numeric(st_area(geometry)) / 1e6, year = 2020) %>%
+  mutate(ahpi = asian + hawaiian,
+         oth2 = other + twomore) %>%
+  select(year, GEOID, NAME, total, latinx, nonlatinx, white, black, native_american, ahpi, oth2, SqKM_BG, geometry)
+
+arcbg.sum <- arcbg20 %>%
+  group_by(year) %>%
+  summarise(pop.sum = sum(total),
+            pop.avg = mean(total), 
+            pop.se = std.error(total),
+            SqKM.sum = sum(SqKM_BG),
+            SqKM.avg = mean(SqKM_BG),
+            Sqkm.se = std.error(SqKM_BG)
+  )
+  
+# import race data using tidycensus for ARC
+arctrt20 <- get_decennial(geography = "tract", variables = dec_vars20, 
+                         state = "GA", county = arc, year = 2020,
+                         output = 'wide',
+                         geometry = TRUE) %>%
+  mutate(SqKM_BG = as.numeric(st_area(geometry)) / 1e6, year = 2020) %>%
+  mutate(ahpi = asian + hawaiian,
+         oth2 = other + twomore) %>%
+  select(year, GEOID, NAME, total, latinx, nonlatinx, white, black, native_american, ahpi, oth2, SqKM_BG, geometry)
+
+arctrt.sum <- arctrt20 %>%
+  group_by(year) %>%
+  summarise(pop.sum = sum(total),
+            pop.avg = mean(total), 
+            pop.se = std.error(total),
+            SqKM.sum = sum(SqKM_BG),
+            SqKM.avg = mean(SqKM_BG),
+            Sqkm.se = std.error(SqKM_BG)
+  )
 
 #################################
 ## test accuracy of count data ##
