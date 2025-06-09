@@ -63,14 +63,14 @@ ga <- filter(sts, STUSPS == "GA")
 # lakes <- area_water('GA', cnty_list$county_code) %>%
 #   filter(FULLNAME %in% c('Lk Jackson', 'Lk Sidney Lanier'))
 
-## OLD mm results from Taylor
-# mm <- st_read(paste0(datadir, 'data/mm_1990_2000_2010_2020')) %>%
-#   st_make_valid()
-# mm2 <- mm %>%
-#   st_transform(4269) 
-# mm2 <- 
-#   mm2[atl,]
-# mm2 <- mm2 %>% mutate(class_2020 = factor(class_2020, levels = c(2,3,7,8,9,10,13,14)))
+## mm results for tracts from Taylor
+mm <- st_read(paste0(datadir, 'data/mm_1990_2000_2010_2020')) %>%
+  st_make_valid()
+mm2 <- mm %>%
+  st_transform(4269)
+mm2 <-
+  mm2[atl,]
+mm2 <- mm2 %>% mutate(class_2020 = factor(class_2020, levels = c(2,3,7,8,9,10,13,14)))
 
 ## organize classes with factors
 shd_bg <- shd_bg %>%
@@ -133,6 +133,17 @@ blk_smry2 <- filter(shd_bg, HUC_NO %in% c('WAWA', 'SRWA', 'uFlint')) %>%
   group_by(HUC_NO, year) %>%
   summarise(total = sum(total), black = sum(black), nonwhite = sum(total) - sum(white), n = n()) %>%
   mutate(pBlack = (black/total) * 100, pNonwhite = (nonwhite/total) * 100)
+
+## summarize percent Black pop in community watersheds by year for ARC
+blk_community_smry <- shd_bg %>%
+  filter(shed %in% c('huc12', 'local')) %>%
+  group_by(shed, year) %>%
+  summarise(total = sum(total), black = sum(black), nonwhite = sum(total) - sum(white), n = n()) %>%
+  ungroup() %>%
+  group_by(year) %>%
+  # mutate(pBlack = (black/total) * 100, pNonwhite = (nonwhite/total) * 100) %>%
+  summarise(pBlack = (black[shed == "local"] / black[shed == "huc12"])*100,
+            pNonwhite = (nonwhite[shed == "local"] / nonwhite[shed == "huc12"])*100)
 
 ###### graphs of results ######
 ## bargraph of diversity/seg
@@ -217,7 +228,7 @@ dev.off()
 ## working on tmap facet
 tf <- 
   tm_shape(filter(shd_bg, shed == 'huc12')) +
-  tm_fill('class10', legend.show = FALSE, palette = leg_col2) + 
+  tm_fill('class10', tm_legend_hide(), fill.scale = tm_scale(leg_col2), fill_alpha = 1) + 
   tm_facets(by = c('year'), ncol = 2) + 
   # tm_shape(atl) + 
   # tm_borders(col = 'grey30', lty = 'solid') + 
@@ -225,20 +236,15 @@ tf <-
   # tm_borders(col = 'black', lwd = 1.5) + 
   tm_shape(rd) + 
   tm_lines(col = "gray60") +
-  tm_compass(type = "arrow", size = 2, position = c(0.055, 0.1)) +
-  tm_scale_bar(breaks = c(0,20), text.size = 0.8, position= c(0.05, 0.0)) +
-  tm_add_legend(type = c("fill"), labels = lbl2, col = leg_col2,
-                title = paste('Race (Diversity)')) +
-  tm_legend(position = c(0.73, 0.02),
-            bg.color = "white",
-            frame = TRUE,
-            legend.text.size = .8,
-            legend.title.size = 1) +
+  # tm_compass(type = "arrow", size = 2, position = c(0.055, 0.1)) +
+  # tm_scalebar(breaks = c(0,20), text.size = 0.8, position= c(0.05, 0.1)) +
+  # tm_add_legend(type = c("polygons"), labels = lbl2, fill = leg_col2,
+  #               title = paste('Race (Diversity)')) +
   tm_layout(frame = TRUE, 
             outer.margins=c(0,0,0,0), 
             inner.margins=c(0,0,0,0), asp=0,
             legend.outside = FALSE)
-
+tf
 ## save map of diversity/seg
 tmap_save(tf, paste0(datadir, "figures/tmap-facets-huc12.png"), units = 'in', width=6.5, height=6.5)
 
@@ -257,9 +263,9 @@ sitemap <-
   # tm_shape(rvr2) + 
   # tm_lines(col = 'deepskyblue', lwd = 2) + 
   # tm_text('NAME', col = 'grey60') +
-  tm_shape(local) +
-  tm_borders(col = 'black', lwd = 1.5) +
-  tm_text('HUC_NO', case = 'upper') + 
+  # tm_shape(local) +
+  # tm_borders(col = 'black', lwd = 1.5) +
+  # tm_text('HUC_NO', case = 'upper') + 
   tm_shape(rd) + 
   tm_lines(col = "gray40") +
   # tm_text('FULLNAME', col = 'gray40') +
@@ -267,7 +273,7 @@ sitemap <-
   tm_scale_bar(breaks = c(0,20), text.size = 0.8, position= c(0.05, 0.0)) +
   tm_add_legend(type = c("fill"), labels = lbl_mm, col = leg_mm,
                 title = paste('Race (Diversity)')) +
-  tm_legend(position = c(0.75, 0.02),
+  tm_legend(position = c(0.75, 0.4),
             bg.color = "white",
             frame = TRUE,
             legend.text.size = .8,
@@ -285,7 +291,7 @@ insetmap <-
   tm_borders() + 
   tm_text('STUSPS') + 
   tm_shape(atl) + 
-  tm_fill(col = 'red') + 
+  tm_fill(col = 'grey40') + 
   tm_text('name', col = 'black') +
   tm_layout(frame = TRUE, 
             outer.margins=c(0,0,0,0), 
