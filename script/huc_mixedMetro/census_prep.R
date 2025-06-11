@@ -33,7 +33,8 @@ cnty <- c("Baldwin","Banks","Barrow","Bartow","Butts","Carroll","Cherokee","Clar
 
 arc <- c("Cherokee","Clayton","Cobb", "DeKalb", "Douglas",
           "Fayette","Forsyth", "Fulton","Gwinnett", "Henry",
-          "Rockdale")
+          "Rockdale"
+         )
 
 ###################################
 #### 1990 decennial data prep ####

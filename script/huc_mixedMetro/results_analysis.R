@@ -55,6 +55,11 @@ atl <-urban_areas(year = '2020') %>%
   mutate(name = 'Atlanta')
 cnty <- counties(state = 'GA')
 cnty_list <- list_counties('GA')
+arc_list <- c("Cherokee","Clayton","Cobb", "DeKalb", "Douglas",
+         "Fayette","Forsyth", "Fulton","Gwinnett", "Henry"
+         # "Rockdale"
+         )
+arc <- filter(cnty_list, county %in% arc_list)
 sts <- states(year = 2020) 
 ga <- filter(sts, STUSPS == "GA")
 # rvr <- linear_water('GA', cnty_list$county_code) 
@@ -69,7 +74,9 @@ mm <- st_read(paste0(datadir, 'data/mm_1990_2000_2010_2020')) %>%
 mm2 <- mm %>%
   st_transform(4269)
 mm2 <-
-  mm2[atl,]
+  # mm2[atl,]
+  mm2 %>%
+  filter(grepl(arc$county, name2000))
 mm2 <- mm2 %>% mutate(class_2020 = factor(class_2020, levels = c(2,3,7,8,9,10,13,14)))
 
 ## organize classes with factors
@@ -245,6 +252,7 @@ tf <-
             inner.margins=c(0,0,0,0), asp=0,
             legend.outside = FALSE)
 tf
+
 ## save map of diversity/seg
 tmap_save(tf, paste0(datadir, "figures/tmap-facets-huc12.png"), units = 'in', width=6.5, height=6.5)
 

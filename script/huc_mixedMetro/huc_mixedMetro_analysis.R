@@ -29,8 +29,7 @@ wtr <- st_read(paste0(datadir, 'data/spatial/watersheds.GEOJSON'))
 shed <- list('huc12')
 # , 'huc10', 'local')
 dec_year <- list(
-  # 1990, 2000, 2010, 
-  2020)
+  1990, 2000, 2010, 2020)
 shd_bg <- NULL
 
 for (i in 1:length(dec_year)) {
@@ -45,7 +44,7 @@ OUT <- bg[shd,]
 
 # identify sub-geographies that intersect watershed boundary
 int <- st_intersection(OUT, shd)
-}}
+
 # extract new BGs within HUCs
 OUT <- int %>%
   mutate(BG_SqKmHuc = round(as.numeric((st_area(geometry) / 1e6)),4)) %>%
