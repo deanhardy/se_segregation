@@ -237,29 +237,34 @@ dev.off()
 ## working on tmap facet
 tf <- 
   tm_shape(filter(shd_bg, shed == 'huc12')) +
-    tm_polygons(col = 'grey70', fill = 'class10', fill.scale = tm_scale_categorical(values = leg_col2),
-              tm_legend_hide()) + 
-    tm_facets(by = c('year'), ncol = 2) + 
-  tm_shape(local) +
-    tm_borders(col = 'grey20', lwd = 2, lty = 'solid', fill_alpha = NA, tm_legend_hide()) +
-    tm_text('HUC_NO', case = 'upper', size = 0.5) +
+    tm_polygons(col = 'grey80', fill = 'class10', fill.scale = tm_scale_categorical(values = leg_col2),
+                tm_legend_hide()
+                # fill.legend = 
+                #   tm_legend(
+                #     type = "fill", 
+                #     labels = lbl2, 
+                #     fill = leg_col2,
+                #     title = paste('Race (Diversity)'))
+                ) + 
+    tm_facets(by = 'year', ncol = 2) + 
   tm_shape(rd) + 
-    tm_lines(col = "gray60") +
-  tm_compass(type = "arrow", size = 2, position = c(0.05, 0.3)) +
-  tm_scalebar(breaks = c(0,20), text.size = 0.8, position= c(0.02, 0.15)) +
+  tm_lines(col = "gray40") +
+  tm_shape(local) +
+    tm_borders(col = 'grey10', lwd = 2, lty = 'solid', fill_alpha = NA, tm_legend_hide()) +
+    tm_text('HUC_NO', case = 'upper', size = 0.5) +
+  tm_compass(type = "arrow", size = 1.5, position = c(0.15,0.25)) +
+  tm_scalebar(breaks = c(0,50), text.size = 0.8, position = c(0,0.12)) +
+  # tm_comp_group("A", position = tm_pos_in("left", "bottom"), stack = 'vertical') + 
   tm_add_legend(type = "polygons", labels = lbl2, fill = leg_col2,
-                title = paste('Race (Diversity)')) +
-  tm_layout(frame = TRUE, 
-            outer.margins=c(0,0,0,0), 
-            inner.margins=c(0,0,0,0), asp=0,
-            legend.outside = FALSE)
-
-
+                title = paste('Race (Diversity)'))
+  # tm_layout(frame = TRUE, 
+  #           outer.margins=c(0,0,0,0), 
+  #           inner.margins=c(0,0,0,0), asp=0)
 
 ## save map of diversity/seg
-tmap_save(tf, paste0(datadir, "figures/tmap-facets-huc12.png"), units = 'in', width=6.5, height=6.5)
+tmap_save(tf, paste0(datadir, "figures/tmap-facets-huc12.png"), units = 'in', width=6.5, height=8)
 
-######## site map of ATL #########
+  ######## site map of ATL #########
 sitemap <- 
   # tm_shape(filter(shd_bg, shed == 'huc12' & year == 2020)) +
   # tm_fill('class10', legend.show = FALSE, palette = leg_col2) + 
