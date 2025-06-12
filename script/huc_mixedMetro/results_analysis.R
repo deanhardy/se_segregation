@@ -74,9 +74,9 @@ mm <- st_read(paste0(datadir, 'data/mm_1990_2000_2010_2020')) %>%
 mm2 <- mm %>%
   st_transform(4269)
 mm2 <-
-  # mm2[atl,]
-  mm2 %>%
-  filter(grepl(arc$county, name2000))
+  mm2[atl,]
+  # mm2 %>%
+  # filter(grepl(arc$county, name2000))
 mm2 <- mm2 %>% mutate(class_2020 = factor(class_2020, levels = c(2,3,7,8,9,10,13,14)))
 
 ## organize classes with factors
@@ -98,6 +98,8 @@ lbl_mm <- c("White (Low)","Black (Low)","Latinx (Low)",
             "White (Mod)", "Black (Mod)","Asian (Mod)", "Latinx (Mod)", 
             "High Diversity")
 
+shd_bg$HUC_NO <- factor(shd_bg$HUC_NO, levels=c('HUC10', 'HUC12','WAWA', 'SRWA', 'uFlint'))
+
 #### figures from results ####
 ## plot local watershed stats over time
 fig <- ggplot(filter(shd_bg, HUC_NO %in% c('WAWA', 'SRWA', 'uFlint'))) + 
@@ -107,18 +109,18 @@ fig <- ggplot(filter(shd_bg, HUC_NO %in% c('WAWA', 'SRWA', 'uFlint'))) +
   geom_point(aes(year, blkpct*100, color = HUC_NO)) + 
   scale_y_continuous(name = 'Nonwhite (solid) & Black (dashed) Population (%)', limits = c(0,100), expand = c(0,0), breaks = seq(0,100,10)) +
   scale_x_continuous(name = 'Year') +
-  labs(color = 'Watershed')+
+  labs(color = 'Community\nOrganizing\nWatershed')+
   theme(text = element_text(size = 10),
         panel.background = element_rect(fill = 'white', colour = 'black'),
         panel.grid.major.y = element_line(colour = 'grey'),
         panel.grid.major.x = element_line(colour = 'grey', linetype = 'dotted'))
 fig
 
-png(paste0(datadir, 'figures/localsheds-pNonwhite+pBlack.png', units = 'in', height = '4', width = '6', res = 150))
+png(paste0(datadir, 'figures/localsheds-pNonwhite+pBlack.png'), units = 'in', height = '4', width = '6', res = 300)
 fig
 dev.off()
 
-###### summary tables of results ######
+  ###### summary tables of results ######
 
 ## summarize huc12s by year and classification
 class_smry <- shd_bg %>%
@@ -185,7 +187,7 @@ rdkb2 <- linegraph + scale_color_manual(values = leg_col2,
 rdkb2
 
 ## export summary by class
-png(paste0(datadir, 'figures/huc12-mixedmetro-1990-2020.png', units = 'in', height = '4', width = '6.5', res = 150))
+png(paste0(datadir, 'figures/huc12-mixedmetro-1990-2020.png'), units = 'in', height = '4', width = '6.5', res = 150)
 rdkb2
 dev.off()
 
@@ -235,23 +237,24 @@ dev.off()
 ## working on tmap facet
 tf <- 
   tm_shape(filter(shd_bg, shed == 'huc12')) +
-  tm_fill('class10', tm_legend_hide(), fill.scale = tm_scale(leg_col2), fill_alpha = 1) + 
-  tm_facets(by = c('year'), ncol = 2) + 
-  # tm_shape(atl) + 
-  # tm_borders(col = 'grey30', lty = 'solid') + 
-  # tm_shape(local) + 
-  # tm_borders(col = 'black', lwd = 1.5) + 
+    tm_polygons(col = 'grey70', fill = 'class10', fill.scale = tm_scale_categorical(values = leg_col2),
+              tm_legend_hide()) + 
+    tm_facets(by = c('year'), ncol = 2) + 
+  tm_shape(local) +
+    tm_borders(col = 'grey20', lwd = 2, lty = 'solid', fill_alpha = NA, tm_legend_hide()) +
+    tm_text('HUC_NO', case = 'upper', size = 0.5) +
   tm_shape(rd) + 
-  tm_lines(col = "gray60") +
-  # tm_compass(type = "arrow", size = 2, position = c(0.055, 0.1)) +
-  # tm_scalebar(breaks = c(0,20), text.size = 0.8, position= c(0.05, 0.1)) +
-  # tm_add_legend(type = c("polygons"), labels = lbl2, fill = leg_col2,
-  #               title = paste('Race (Diversity)')) +
+    tm_lines(col = "gray60") +
+  tm_compass(type = "arrow", size = 2, position = c(0.05, 0.3)) +
+  tm_scalebar(breaks = c(0,20), text.size = 0.8, position= c(0.02, 0.15)) +
+  tm_add_legend(type = "polygons", labels = lbl2, fill = leg_col2,
+                title = paste('Race (Diversity)')) +
   tm_layout(frame = TRUE, 
             outer.margins=c(0,0,0,0), 
             inner.margins=c(0,0,0,0), asp=0,
             legend.outside = FALSE)
-tf
+
+
 
 ## save map of diversity/seg
 tmap_save(tf, paste0(datadir, "figures/tmap-facets-huc12.png"), units = 'in', width=6.5, height=6.5)
@@ -277,13 +280,14 @@ sitemap <-
   tm_shape(rd) + 
   tm_lines(col = "gray40") +
   # tm_text('FULLNAME', col = 'gray40') +
-  tm_compass(type = "arrow", size = 3, position = c(0.075, 0.07)) +
-  tm_scale_bar(breaks = c(0,20), text.size = 0.8, position= c(0.05, 0.0)) +
+  tm_compass(type = "arrow", size = 3, position = c(0.17, 0.17)) +
+  tm_scale_bar(breaks = c(0,20), text.size = 0.8, position= c(0.12, 0.07)) +
   tm_add_legend(type = c("fill"), labels = lbl_mm, col = leg_mm,
                 title = paste('Race (Diversity)')) +
-  tm_legend(position = c(0.75, 0.4),
+  tm_legend(position = c(0.8, 0.3),
             bg.color = "white",
             frame = TRUE,
+            frame.lwd = 1,
             legend.text.size = .8,
             legend.title.size = 1) +
   tm_layout(frame = TRUE, 
@@ -299,7 +303,7 @@ insetmap <-
   tm_borders() + 
   tm_text('STUSPS') + 
   tm_shape(atl) + 
-  tm_fill(col = 'grey40') + 
+  tm_fill(fill = 'grey80') + 
   tm_text('name', col = 'black') +
   tm_layout(frame = TRUE, 
             outer.margins=c(0,0,0,0), 
@@ -316,3 +320,34 @@ vp <- viewport(x=0.27, y=0.99, width = w, height=h, just=c("right", "top"))
 
 ## save map of diversity/seg
 tmap_save(sitemap, paste0(datadir, "figures/site-map.png"), insets_tm = insetmap, insets_vp = vp, units = 'in', width=6.5, height=6.5)
+
+
+######## site map of ATL #########
+comm.map <- 
+  tm_shape(local) + 
+    tm_borders(col = "grey40", lwd = 1, lty = "solid", fill_alpha = NA, tm_legend_hide()) +
+  tm_shape(filter(shd_bg, shed == 'huc12' & year == '2020')) +
+    tm_polygons(col = 'grey70', fill = 'class10', fill.scale = tm_scale_categorical(values = leg_col2),
+                tm_legend_hide()) + 
+  # tm_shape(rd) + 
+  #   tm_lines(col = "gray90") +
+  tm_shape(local) +
+    tm_borders(col = 'grey20', lwd = 2, lty = 'solid', fill_alpha = NA, tm_legend_hide()) +
+    tm_text('HUC_NO', case = 'upper') +
+  tm_compass(type = "arrow", size = 3, position = c(0.16, 0.35)) +
+  tm_scalebar(breaks = c(0,5), text.size = 0.8, position= c(0.12, 0.17)) +
+  tm_add_legend(type = "polygons", labels = lbl2, fill = leg_col2,
+                title = paste('Race (Diversity)')) +
+  tm_legend(position = c(0.8, 0.3),
+            bg.color = "white",
+            frame = TRUE,
+            frame.lwd = 1,
+            legend.text.size = .8,
+            legend.title.size = 1) +
+  tm_layout(frame = TRUE, 
+            outer.margins=c(0,0,0,0), 
+            inner.margins=c(0,0,0,0), asp=0)
+comm.map
+
+## save map of diversity/seg
+tmap_save(comm.map, paste0(datadir, "figures/community-map.png"), insets_tm = insetmap, insets_vp = vp, units = 'in', width=6.5, height=6.5)
