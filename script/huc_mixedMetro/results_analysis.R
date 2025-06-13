@@ -90,6 +90,7 @@ local <- shd_bg %>% filter(shed == 'local' & year == 2020)
 leg_col2 <- c("#ff9900","#66cc00","#ffcc99", "#99ff99", "#cc99ff","#99752e")
 lbl2 <- c("White (Low)","Black (Low)","White (Mod)",
           "Black (Mod)","Latinx (Mod)","High Diversity")
+lbl3 <- c("LDW","LDB","MDW","MDB","MDL","HD")
 
 leg_mm <- c("#ff9900","#66cc00", "#9966ff",
             "#ffcc99", "#99ff99", "#ff9999","#cc99ff",
@@ -234,37 +235,47 @@ dev.off()
 ## save map of diversity/seg
 # tmap_save(shd, paste0("figures/map-", sheds[[z]], '-', blk_grps[[i]], '.png'), width=1920, height=1080, asp=0)
 
+tf.col <- c("#ff9900","#66cc00","#ffcc99", "#99ff99", "#cc99ff","#99752e")
+tf.lbl <- c("White (Low)","Black (Low)","White (Mod)",
+          "Black (Mod)","Latinx (Mod)","High Diversity")
+tf.lbl2 <- c("LDW","LDB","MDW","MDB","MDL","HD")
+
+shd_bg$category <- factor(shd_bg$category, levels = c("LDW","LDB","MDW","MDB","MDL","HD"))
+  
 ## working on tmap facet
 tf <- 
   tm_shape(filter(shd_bg, shed == 'huc12')) +
-    tm_polygons(col = 'grey80', fill = 'class10', fill.scale = tm_scale_categorical(values = leg_col2),
-                tm_legend_hide()
-                # fill.legend = 
-                #   tm_legend(
-                #     type = "fill", 
-                #     labels = lbl2, 
-                #     fill = leg_col2,
-                #     title = paste('Race (Diversity)'))
+    tm_polygons(col = 'grey80', fill = 'category', fill.scale = tm_scale_categorical(values = tf.col),
+                # tm_legend_hide()
+                lwd = 0.5,
+                fill.legend =
+                  tm_legend(
+                    type = "fill",
+                    labels = tf.lbl,
+                    fill = tf.col,
+                    orientation = 'landscape',
+                    # position = 'bottom',
+                    title = "")
                 ) + 
     tm_facets(by = 'year', ncol = 2) + 
   tm_shape(rd) + 
   tm_lines(col = "gray40") +
   tm_shape(local) +
     tm_borders(col = 'grey10', lwd = 2, lty = 'solid', fill_alpha = NA, tm_legend_hide()) +
-    tm_text('HUC_NO', case = 'upper', size = 0.5) +
-  tm_compass(type = "arrow", size = 1.5, position = c(0.15,0.25)) +
-  tm_scalebar(breaks = c(0,50), text.size = 0.8, position = c(0,0.12)) +
+    # tm_text('HUC_NO', case = 'upper', size = 0.5) +
+  tm_compass(type = "arrow", size = 1.5, position = c(0.15,0.26)) +
+  tm_scalebar(breaks = c(0,50), text.size = 0.8, position = c(0,0.13))
   # tm_comp_group("A", position = tm_pos_in("left", "bottom"), stack = 'vertical') + 
-  tm_add_legend(type = "polygons", labels = lbl2, fill = leg_col2,
-                title = paste('Race (Diversity)'))
+  # tm_add_legend(type = "polygons", labels = lbl2, fill = leg_col2,
+  #               title = paste('Race (Diversity)'))
   # tm_layout(frame = TRUE, 
   #           outer.margins=c(0,0,0,0), 
   #           inner.margins=c(0,0,0,0), asp=0)
 
 ## save map of diversity/seg
-tmap_save(tf, paste0(datadir, "figures/tmap-facets-huc12.png"), units = 'in', width=6.5, height=8)
+tmap_save(tf, paste0(datadir, "figures/tmap-facets-huc12.png"), units = 'in', width=6.5, height=7)
 
-  ######## site map of ATL #########
+   ######## site map of ATL #########
 sitemap <- 
   # tm_shape(filter(shd_bg, shed == 'huc12' & year == 2020)) +
   # tm_fill('class10', legend.show = FALSE, palette = leg_col2) + 
@@ -279,9 +290,9 @@ sitemap <-
   # tm_shape(rvr2) + 
   # tm_lines(col = 'deepskyblue', lwd = 2) + 
   # tm_text('NAME', col = 'grey60') +
-  # tm_shape(local) +
-  # tm_borders(col = 'black', lwd = 1.5) +
-  # tm_text('HUC_NO', case = 'upper') + 
+  tm_shape(local) +
+  tm_borders(col = 'grey10', lwd = 2, lty = 'solid', fill_alpha = NA, tm_legend_hide()) +
+  tm_text('HUC_NO', case = 'upper', size = 1) +
   tm_shape(rd) + 
   tm_lines(col = "gray40") +
   # tm_text('FULLNAME', col = 'gray40') +
@@ -291,7 +302,6 @@ sitemap <-
                 title = paste('Race (Diversity)')) +
   tm_legend(position = c(0.8, 0.3),
             bg.color = "white",
-            frame = TRUE,
             frame.lwd = 1,
             legend.text.size = .8,
             legend.title.size = 1) +
