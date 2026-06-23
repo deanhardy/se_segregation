@@ -62,9 +62,9 @@ arc_list <- c("Cherokee","Clayton","Cobb", "DeKalb", "Douglas",
 arc <- filter(cnty_list, county %in% arc_list)
 sts <- states(year = 2020) 
 ga <- filter(sts, STUSPS == "GA")
-# rvr <- linear_water('GA', cnty_list$county_code) 
-# rvr2 <- rvr %>%
-#   filter(FULLNAME %in% c('Chattahoochee Riv', 'Chattahoochie Riv', 'South Riv', 'Yellow Riv', 'Alcovy Riv', 'Ocmulgee Riv'))
+rvr <- linear_water('GA', cnty_list$county_code)
+rvr2 <- rvr %>%
+  filter(FULLNAME %in% c('Chattahoochee Riv', 'Chattahoochie Riv', 'South Riv', 'Yellow Riv', 'Alcovy Riv', 'Ocmulgee Riv'))
 # lakes <- area_water('GA', cnty_list$county_code) %>%
 #   filter(FULLNAME %in% c('Lk Jackson', 'Lk Sidney Lanier'))
 
@@ -73,7 +73,7 @@ mm <- st_read(paste0(datadir, 'data/mm_1990_2000_2010_2020')) %>%
   st_make_valid()
 mm2 <- mm %>%
   st_transform(4269)
-mm2 <-
+mm2 <- 
   mm2[atl,]
   # mm2 %>%
   # filter(grepl(arc$county, name2000))
@@ -283,21 +283,21 @@ sitemap <-
   tm_borders(col = 'grey90', lty = 'solid') +
   tm_shape(mm2) + 
   tm_fill('class_2020', legend.show = F, palette = leg_mm) + 
-  tm_shape(cnty) + 
-  tm_borders(col = 'gray60', lty = 'dashed') + 
+  # tm_shape(cnty) + 
+  # tm_borders(col = 'gray60', lty = 'dashed') + 
   # tm_shape(lakes) + 
   # tm_polygons(col = 'deepskyblue') + 
-  # tm_shape(rvr2) + 
-  # tm_lines(col = 'deepskyblue', lwd = 2) + 
-  # tm_text('NAME', col = 'grey60') +
+  tm_shape(rvr2) +
+  tm_lines(col = 'deepskyblue', lwd = 2) +
+  tm_text('NAME', col = 'grey60') +
   tm_shape(local) +
   tm_borders(col = 'grey10', lwd = 2, lty = 'solid', fill_alpha = NA, tm_legend_hide()) +
   tm_text('HUC_NO', case = 'upper', size = 1) +
-  tm_shape(rd) + 
-  tm_lines(col = "gray40") +
+  # tm_shape(rd) + 
+  # tm_lines(col = "gray40") +
   # tm_text('FULLNAME', col = 'gray40') +
   tm_compass(type = "arrow", size = 3, position = c(0.17, 0.17)) +
-  tm_scale_bar(breaks = c(0,20), text.size = 0.8, position= c(0.12, 0.07)) +
+  # tm_scale_bar(breaks = c(0,20), text.size = 0.8, position= c(0.12, 0.07)) +
   tm_add_legend(type = c("fill"), labels = lbl_mm, col = leg_mm,
                 title = paste('Race (Diversity)')) +
   tm_legend(position = c(0.8, 0.3),

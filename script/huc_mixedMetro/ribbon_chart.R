@@ -61,7 +61,7 @@ nodes <- data.frame(
          as.character(links$target.ch)) %>% unique()
 ) 
 
-## add unique links pairing each decadal transiion
+## add unique links pairing each decadal transition
 links$IDsource <- match(links$source.ch, nodes$name)-1
 links$IDtarget <- match(links$target.ch, nodes$name)-1
 
