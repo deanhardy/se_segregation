@@ -289,7 +289,6 @@ sitemap <-
   # tm_polygons(col = 'deepskyblue') + 
   tm_shape(rvr2) +
   tm_lines(col = 'deepskyblue', lwd = 2) +
-  tm_text('NAME', col = 'grey60') +
   tm_shape(local) +
   tm_borders(col = 'grey10', lwd = 2, lty = 'solid', fill_alpha = NA, tm_legend_hide()) +
   tm_text('HUC_NO', case = 'upper', size = 1) +
