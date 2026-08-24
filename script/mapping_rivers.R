@@ -9,12 +9,13 @@ datadir <- file.path('/Users/dhardy/Dropbox/r_data/se_segregation/')
 library(hydrogeofetch)
 library(sf)
 library(tigris)
+library(tidyverse)
 
 ## set global parameters
 # colors
 river_blue <- "#4783A9" # for waterbodies and river lines
-city_grey <- "#DDDDDD" # for cities
-png_bkg <- "#EDEEEE" # an off-white background
+city_grey <- "#EEEEEE" # for cities
+png_bkg <- "#FFFFFF" # an off-white background
 text_color <- "black" 
 
 shd.fill <- c("#ff9900","#66cc00","#ffcc99", "#99ff99", "#cc99ff","#99752e")
@@ -27,23 +28,41 @@ png_width <- 7 #inches
 png_height <- 7 #inches
 dpi <- 300 #dots per inch
 
-# import ancillary map data
+## download ancillary data for map
+rd <- primary_roads(year = 2022) %>%
+  filter(RTTYP == 'I')
 atl <-urban_areas(year = '2020') %>%
   filter(NAME10 == 'Atlanta, GA') %>%
   mutate(name = 'Atlanta')
+cnty <- counties(state = 'GA')
+cnty_list <- list_counties('GA')
+arc_list <- c("Cherokee","Clayton","Cobb", "DeKalb", "Douglas",
+              "Fayette","Forsyth", "Fulton","Gwinnett", "Henry"
+              # "Rockdale"
+)
+arc <- filter(cnty_list, county %in% arc_list)
+sts <- states(year = 2020) 
+ga <- filter(sts, STUSPS == "GA")
 
-## import results
+## import watershed results
 shd_bg <- st_read(paste0(datadir, 'data/spatial/hucMixedMetro.GEOJSON'))
 
 shd_bg$category <- factor(shd_bg$category, levels = c("LDW","LDB","MDW","MDB","MDL","HD"))
 
+## filter to custom/local watersheds
+local <- shd_bg %>% filter(shed == 'local' & year == 2020)
+
 ## define start points & import NHD data using hydrogeofetch
-coord_list <- list(c(-83.8373611111111, 33.3126111111111), ## Ocmulgee near Jackson gauge #02210500
-                   c(-84.9011944444445, 33.4765277777778), ## Chattachoochee near Whitesburg gauge #02338000
+coord_list <- list(c(-83.7271944444445, 33.0168611111111), ## Ocmulgee at Dames Ferry gauge #02212735
+                   c(-85.1815833333333, 32.8866388888889), ## Chattachoochee near at West Point gauge #02339500
                    c(-84.97875, 34.2093055555556), ## Etowah near Kingston gauge #02395000
+                   c(-85.3361388888889, 33.7413888888889), ## Tallapoosa at US 78 gauge #02411930
+                   c(-85.25641666666667, 34.200500000000005), ## Coosa near Rome gauge #02397000
+                   c(-83.2147777777778, 33.0901666666667), ## Oconee near Milledgeville gauge #02223000
                    c(-84.5266388888889, 33.0476944444444)) ## Flint near Molena gauge #02344872
 
 flowlineOUT <- NULL
+waterbodyOUT <- NULL
 
 for (i in seq_along(coord_list)) {
 start_point <- st_sfc(st_point(coord_list[[i]]), crs = 4326) 
@@ -63,9 +82,10 @@ subset <- subset_nhdplus(comids = as.integer(flowline$UT$nhdplus_comid),
 
 flowline <- subset$NHDFlowline_Network
 # catchment <- subset$CatchmentSP
-# waterbody <- subset$NHDWaterbody
+waterbody <- subset$NHDWaterbody
 
 flowlineOUT <- rbind(flowlineOUT, flowline)
+waterbodyOUT <- rbind(waterbodyOUT, waterbody)
 }
 
 ## Or using a file:
@@ -82,6 +102,15 @@ ggplot(data = flowlineOUT) +
   geom_sf(data = start_point, color = "white", fill = "black",
           shape = 21, stroke = 1, size = 3) 
 
+# load custom font
+font_title <- 'Source Code Pro'
+sysfonts::font_add_google(font_title)
+showtext::showtext_opts(dpi = dpi, regular.wt = 200, bold.wt = 700)
+showtext::showtext_auto(enable = TRUE)
+
+## set map bbox limits
+bbox <- sf::st_bbox(atl)
+
 # update map by adding nice colors and line thicknesses
 ggplot() +
   # hydrolines: map stream order categories to factor labels
@@ -90,7 +119,13 @@ ggplot() +
   #   fill = city_grey, linewidth = 0.01
   # ) +
   geom_sf(
-    data = filter(shd_bg, year == 2020), aes(fill = category)
+    data = atl, fill = '#eeeeee', color = NA
+  ) +
+  geom_sf(
+    data = cnty, linetype = 'dashed', linewidth = 0.3
+  ) +
+  geom_sf(
+    data = local, fill = NA, color = 'black', linewidth = 0.5
   ) +
   geom_sf(
     data = flowlineOUT,
@@ -113,14 +148,19 @@ ggplot() +
       tiny = 0.04),
     # hide legend
     guide = "none") +
+  geom_sf(data = filter(waterbodyOUT, areasqkm >= 10) , color = river_blue,
+          fill  = river_blue, linewidth = 0.01) +
+  # force coordinates to match the first layer's explicit limits
+  coord_sf(xlim = c(bbox["xmin"], bbox["xmax"]), 
+           ylim = c(bbox["ymin"], bbox["ymax"])) + 
+  # labels 
+  geom_sf_text(data = cnty, aes(label = NAME),
+               size = 3.5, color = "gray50", 
+               family = font_title, fontface = "plain") +
+  geom_sf_text(data = local, aes(label = HUC_NO),
+               size = 4, color = "gray20", 
+               family = font_title, fontface = "bold") +
   # water bodies
-  # geom_sf(data = waterbody, color = river_blue,
-  #         fill  = river_blue, linewidth = 0.01) +
-  # geom_sf(data = waterbody2, color = river_blue,
-  #         fill  = river_blue, linewidth = 0.01) +
-  # dot in the middle for our main location of interest
-  # geom_sf(data = start_point, color = "white", fill = "black",
-  #         shape = 21, stroke = 1, size = 3) +
   theme_void()
 
 # example of ggsave
@@ -128,19 +168,3 @@ ggsave(filename = paste0(datadir, "figures/atl_rivers_map.png"),
        # plot = plot_name, # leave blank to print last map created
        width = png_width, height = png_height, 
        dpi = dpi, units = "in")
-
-
-
-## download ancillary data for map
-rd <- primary_roads(year = 2022) %>%
-  filter(RTTYP == 'I')
-cnty <- counties(state = 'GA')
-cnty_list <- list_counties('GA')
-arc_list <- c("Cherokee","Clayton","Cobb", "DeKalb", "Douglas",
-              "Fayette","Forsyth", "Fulton","Gwinnett", "Henry"
-              # "Rockdale"
-)
-arc <- filter(cnty_list, county %in% arc_list)
-sts <- states(year = 2020) 
-ga <- filter(sts, STUSPS == "GA")
-
